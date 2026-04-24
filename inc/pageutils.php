@@ -120,6 +120,10 @@ function getID($param = 'id', $clean = true)
  * @param  string  $raw_id    The pageid to clean
  * @param  boolean $ascii     Force ASCII
  * @return string cleaned id
+ *
+ * @psalm-taint-escape file stripspecials() plus the subsequent regex
+ *     collapses remove path-traversal sequences (`:..:` -> `:`), and
+ *     trim() strips leading/trailing `._-:`.
  */
 function cleanID($raw_id, $ascii = false)
 {
@@ -671,6 +675,9 @@ function isVisiblePage($id)
  *
  * @param string $id page id
  * @return string
+ *
+ * @psalm-taint-escape html delegates to hsc()
+ * @psalm-taint-escape has_quotes
  */
 function prettyprint_id($id)
 {

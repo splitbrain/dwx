@@ -30,6 +30,18 @@ a user-controlled key (unusual but possible) will punch through the
 escape. Worth a scan during M3 for callers that build `$params` from
 `$INPUT->*` keys.
 
+### **M2-02** `utf8_encodeFN()` is not a path-traversal sanitizer
+
+`inc/pageutils.php:703` has two passthrough branches: (a)
+`$conf['fnencode'] == 'utf-8'` returns the file name unchanged, (b)
+`$safe=true` plus the regex `^[a-zA-Z0-9/_\-\.%]+$` returns the name
+unchanged — and that regex matches `../../etc/passwd`. Only the
+`SafeFN::encode` and `urlencode` branches actually transform the input.
+Because the escape would not hold in the common cases, I did not
+annotate `file`. TASKS.md suggested `file` here; recommend leaving
+unannotated and treating path-traversal prevention as `cleanID()`'s
+responsibility upstream of this function.
+
 ### **M2-01** `stripctl()` deliberately unannotated
 
 `inc/common.php:96` strips only `\x00-\x1F`. That does not make a string
