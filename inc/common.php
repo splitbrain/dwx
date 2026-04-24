@@ -32,6 +32,8 @@ use function PHP81_BC\strftime;
  * @author Andreas Gohr <andi@splitbrain.org>
  * @see    htmlspecialchars()
  *
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
  */
 function hsc($string)
 {
@@ -369,6 +371,9 @@ function buildURLparams($params, $sep = '&amp;')
  * @return string
  * @author Andreas Gohr
  *
+ * @psalm-taint-escape html delegates to hsc() for all values; keys are
+ *     emitted raw and must be controlled by the caller.
+ * @psalm-taint-escape has_quotes
  */
 function buildAttributes($params, $skipEmptyStrings = false)
 {
@@ -996,6 +1001,8 @@ function cleanText($text)
  * @see    cleanText() for 2unix conversion
  * @author Andreas Gohr <andi@splitbrain.org>
  *
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
  */
 function formText($text)
 {
