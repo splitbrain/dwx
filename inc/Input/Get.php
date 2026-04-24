@@ -4,6 +4,10 @@ namespace dokuwiki\Input;
 
 /**
  * Internal class used for $_GET access in dokuwiki\Input\Input class
+ *
+ * All inherited accessor methods ({@see Input::param()}, {@see Input::str()},
+ * {@see Input::arr()}, {@see Input::ref()}) return attacker-controlled values
+ * from $_GET and are marked @psalm-taint-source input on the parent class.
  */
 class Get extends Input
 {
