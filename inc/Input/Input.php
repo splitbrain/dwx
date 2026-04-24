@@ -111,6 +111,9 @@ class Input
      * @param mixed $default Default to return if parameter isn't set
      * @param bool $nonempty Return $default if parameter is set but empty()
      * @return mixed
+     *
+     * Returns raw $_REQUEST content — any string here is attacker-controlled.
+     * @psalm-taint-source input
      */
     public function param($name, $default = null, $nonempty = false)
     {
@@ -141,6 +144,9 @@ class Input
      * @param mixed $default If parameter is not set, initialize with this value
      * @param bool $nonempty Init with $default if parameter is set but empty()
      * @return mixed (reference)
+     *
+     * Returns a reference into the $_REQUEST superglobal — attacker-controlled.
+     * @psalm-taint-source input
      */
     public function &ref($name, $default = '', $nonempty = false)
     {
@@ -158,6 +164,13 @@ class Input
      * @param int $default Default to return if parameter isn't set or is an array
      * @param bool $nonempty Return $default if parameter is set but empty()
      * @return int
+     *
+     * The (int) cast discards any string payload — safe for all string-contextual sinks.
+     * @psalm-taint-escape html
+     * @psalm-taint-escape sql
+     * @psalm-taint-escape shell
+     * @psalm-taint-escape file
+     * @psalm-taint-escape has_quotes
      */
     public function int($name, $default = 0, $nonempty = false)
     {
@@ -177,6 +190,9 @@ class Input
      * @param string $default Default to return if parameter isn't set or is an array
      * @param bool $nonempty Return $default if parameter is set but empty()
      * @return string
+     *
+     * Returns raw user-supplied string content from $_REQUEST.
+     * @psalm-taint-source input
      */
     public function str($name, $default = '', $nonempty = false)
     {
@@ -198,6 +214,8 @@ class Input
      * @param string $name Parameter name
      * @param array $valids Array of valid values
      * @param mixed $default Default to return if parameter isn't set or not valid
+     *
+     * Returned value comes from caller-supplied $valids, not input; Psalm tracks its taint through the array.
      * @return null|mixed
      */
     public function valid($name, $valids, $default = null)
@@ -219,6 +237,13 @@ class Input
      * @param mixed $default Default to return if parameter isn't set
      * @param bool $nonempty Return $default if parameter is set but empty()
      * @return bool
+     *
+     * The (bool) cast discards any string payload — safe for all string-contextual sinks.
+     * @psalm-taint-escape html
+     * @psalm-taint-escape sql
+     * @psalm-taint-escape shell
+     * @psalm-taint-escape file
+     * @psalm-taint-escape has_quotes
      */
     public function bool($name, $default = false, $nonempty = false)
     {
@@ -238,6 +263,9 @@ class Input
      * @param mixed $default Default to return if parameter isn't set
      * @param bool $nonempty Return $default if parameter is set but empty()
      * @return array
+     *
+     * Returns an array of attacker-controlled values; Psalm propagates taint through array elements.
+     * @psalm-taint-source input
      */
     public function arr($name, $default = [], $nonempty = false)
     {
