@@ -10,18 +10,14 @@ they can be dispatched in parallel.
 
 ---
 
-## M1 — Input sources
+## M1 — Input sources ✅ complete
 
-Annotate public methods of the `dokuwiki\Input\Input` hierarchy. Each task
-annotates one file end-to-end because the methods of a single class belong
-together and commit cleanly as a unit.
+- [done] M1-01 — Annotate base `Input` class (inc/Input/Input.php) — commit 74e6aebf
+- [done] M1-02 — Annotate `Get` subclass (inc/Input/Get.php) — commit ea939a91
+- [done] M1-03 — Annotate `Post` subclass (inc/Input/Post.php) — commit 410dd78d
+- [done] M1-04 — Annotate `Server` subclass (inc/Input/Server.php) — commit bf162c8b
 
-- [pending] M1-01 — Annotate base `Input` class (inc/Input/Input.php)
-- [pending] M1-02 — Annotate `Get` subclass (inc/Input/Get.php)
-- [pending] M1-03 — Annotate `Post` subclass (inc/Input/Post.php)
-- [pending] M1-04 — Annotate `Server` subclass (inc/Input/Server.php)
-
-### M1 method inventory (for subagent reference)
+### M1 method inventory (kept for future reference)
 
 **inc/Input/Input.php** (`dokuwiki\Input\Input`)
 - `__construct()` — not a source (creates subobjects).
@@ -31,42 +27,47 @@ together and commit cleanly as a unit.
 - `remove($name): void` — not a source (mutator).
 - `param($name, $default = null, $nonempty = false): mixed` — **source**.
 - `set($name, $value): void` — not a source (mutator); `$value` is not a sink.
-- `&ref($name, $default = '', $nonempty = false): mixed` — **source** (returns a reference into the superglobal).
-- `int($name, ..): int` — not a source (cast to int strips string content).
-- `str($name, ..): string` — **source** (returns raw string from superglobal).
-- `valid($name, $valids, $default = null)` — not a source (returns a whitelisted value from `$valids`, which is untainted at callsite).
-- `bool($name, ..): bool` — not a source (cast to bool strips content).
-- `arr($name, $default = [], $nonempty = false): array` — **source** (values inside array are attacker-controlled).
-- `extract($name): Input` — not a source (returns `$this`; mutates access via `set`).
+- `&ref($name, $default = '', $nonempty = false): mixed` — **source**.
+- `int($name, ..): int` — 5-scope escape (html, sql, shell, file, has_quotes) via (int) cast.
+- `str($name, ..): string` — **source**.
+- `valid($name, $valids, $default = null)` — no annotation; result comes from caller `$valids`.
+- `bool($name, ..): bool` — 5-scope escape via (bool) cast.
+- `arr($name, $default = [], $nonempty = false): array` — **source**.
+- `extract($name): Input` — not a source.
 
-**inc/Input/Get.php** (`dokuwiki\Input\Get extends Input`)
-- `__construct()` — binds `$_GET`.
-- `set($name, $value)` — mutator; also writes `$_REQUEST`.
-
-**inc/Input/Post.php** (`dokuwiki\Input\Post extends Input`)
-- `__construct()` — binds `$_POST`.
-- `set($name, $value)` — mutator; also writes `$_REQUEST`.
-
-**inc/Input/Server.php** (`dokuwiki\Input\Server extends Input`)
-- `__construct()` — binds `$_SERVER`.
-- No overridden methods. All inherited accessors are still sources because
-  `$_SERVER` is attacker-controllable (HTTP headers, query strings, etc.).
-
-### Non-negotiable rules reminder for subagents
-
-- Narrow escape scopes only. No bare `@psalm-taint-escape`.
-- Preserve existing docblock content exactly — only add the `@psalm-taint-*`
-  lines and a one-line justification above them.
-- Don't touch implementation code.
-- Run `php -l` on touched files before returning.
+**Get / Post / Server** — class-level docblock notes only; taint inherited.
 
 ---
 
-## M2 — Obvious sanitizers (break down after M1 review)
+## M2 — Obvious sanitizers
 
-(placeholder — populated at M1 milestone boundary)
+Break down by file. Annotate narrow escape scopes only. When in doubt,
+return `status: blocked` with reasoning — do NOT over-escape.
 
-## M3 — Triage run (placeholder)
+High-confidence candidates should annotate cleanly. Medium-confidence
+candidates require the subagent to read the function body and decide
+whether to annotate or escalate. Anything NOT a sanitizer (just
+normalization/validation) gets no annotation and should be skipped.
+
+### Task list
+
+- [pending] M2-01 — `inc/common.php`: `hsc()` → html, `buildAttributes()` → html, `formText()` → html, `stripctl()` → review (see M2 notes), `idfilter()` → review.
+- [pending] M2-02 — `inc/pageutils.php`: `prettyprint_id()` → html (delegates to hsc), `utf8_encodeFN()` → file. Address `cleanID()` carefully — it's normalization that incidentally makes filesystem-safe names; annotate `file` with a narrow justification or escalate if unsure.
+- [pending] M2-03 — `inc/SafeFN.class.php`: `SafeFN::encode()` → file. Skip `decode()` and `validateSafe()` (not sanitizers).
+- [pending] M2-04 — `inc/Utf8/Clean.php`: `Clean::stripspecials()` and `Clean::strip()` are MEDIUM confidence. Subagent should inspect and either annotate narrowly or escalate. Explicitly skip `deaccent`, `romanize`, `replaceBadBytes`, `isASCII`, `isUtf8` (not sanitizers).
+- [pending] M2-05 — `inc/actions.php`: `act_clean()` normalizes action identifiers (regex-strips to `[1-9a-z_]+`). Annotate `@psalm-taint-escape file` with justification, or escalate if the subagent thinks it isn't used in file-context sinks.
+- [pending] M2-06 — `inc/auth.php`: `auth_nameencode()` percent-encodes a limited range of chars. MEDIUM confidence. Annotate `file` or escalate.
+- [pending] M2-07 — `inc/fetch.functions.php`: `rfc2231_encode()` — email-header encoding. Likely not a scope we care about; escalate with a review request if unsure.
+
+### M2 general notes for subagents
+
+- `cleanText()`, `utf8_decodeFN()`, `SafeFN::decode()`, `SafeFN::validateSafe()`, `Clean::replaceBadBytes()`, `Clean::deaccent()`, `Clean::romanize()`, `Clean::isASCII()`, `Clean::isUtf8()` are **not** sanitizers. Do not annotate them.
+- No core SQL or shell sanitizers were found in discovery — none expected in M2.
+- If a function wraps another already-annotated sanitizer (e.g. `buildAttributes` → `hsc`), prefer marking the wrapper with the same scope AND add a one-line justification mentioning the delegation.
+
+---
+
+## M3 — Triage run (placeholder — populated after M2 review)
 
 ## M4 — Output sinks (placeholder)
 
