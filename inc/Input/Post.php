@@ -4,6 +4,10 @@ namespace dokuwiki\Input;
 
 /**
  * Internal class used for $_POST access in dokuwiki\Input\Input class
+ *
+ * All inherited accessor methods ({@see Input::param()}, {@see Input::str()},
+ * {@see Input::arr()}, {@see Input::ref()}) return attacker-controlled values
+ * from $_POST and are marked @psalm-taint-source input on the parent class.
  */
 class Post extends Input
 {
