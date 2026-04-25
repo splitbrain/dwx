@@ -192,6 +192,11 @@ class admin_plugin_usermanager extends AdminPlugin
      *
      * @return bool
      * @todo split into smaller functions, use Form class
+     *
+     * @psalm-taint-sink html admin plugin html() emits UI: echoes locale_xhtml
+     *     intro/list, the user table (rows escaped via hsc()), pagination
+     *     buttons whose labels come from $this->lang, and delegates to
+     *     htmlUserForm()/htmlImportForm() which echo additional markup.
      */
     public function html()
     {
@@ -375,6 +380,10 @@ class admin_plugin_usermanager extends AdminPlugin
      * @param array $userdata array with name, mail, pass and grps
      * @param int $indent
      * @todo use Form class
+     *
+     * @psalm-taint-sink html echoes the add/modify-user form markup directly;
+     *     $user is hsc()'d into the userid_old hidden input but the table
+     *     scaffolding and lang strings are emitted as-is.
      */
     protected function htmlUserForm($cmd, $user = '', $userdata = [], $indent = 0)
     {
@@ -513,6 +522,10 @@ class admin_plugin_usermanager extends AdminPlugin
      * @param bool $required is this field required?
      * @param int $indent
      * @todo obsolete when Form class is used
+     *
+     * @psalm-taint-sink html echoes an <input> row directly; $value is
+     *     hsc()'d before output but $id, $name and the surrounding markup
+     *     are emitted as the sink.
      */
     protected function htmlInputField($id, $name, $label, $value, $cando, $required, $indent = 0)
     {
@@ -553,6 +566,9 @@ class admin_plugin_usermanager extends AdminPlugin
      *
      * @param string $key name of search field
      * @return string html escaped value
+     *
+     * @psalm-taint-escape html return value is the filter string passed
+     *     through hsc(), suitable for embedding in HTML attribute context.
      */
     protected function htmlFilter($key)
     {
@@ -564,6 +580,10 @@ class admin_plugin_usermanager extends AdminPlugin
      * Print hidden inputs with the current filter values
      *
      * @param int $indent
+     *
+     * @psalm-taint-sink html echoes hidden <input> markup directly; filter
+     *     values are hsc()'d but $key and the surrounding markup are emitted
+     *     as the sink.
      */
     protected function htmlFilterSettings($indent = 0)
     {
@@ -579,6 +599,11 @@ class admin_plugin_usermanager extends AdminPlugin
      * Print import form and summary of previous import
      *
      * @param int $indent
+     *
+     * @psalm-taint-sink html echoes the CSV import form and the previous
+     *     import-failure table directly; failure user fields are hsc()'d
+     *     but $failure['error'] and the surrounding markup are emitted
+     *     unescaped as the sink.
      */
     protected function htmlImportForm($indent = 0)
     {
