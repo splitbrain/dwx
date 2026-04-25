@@ -334,6 +334,10 @@ function js_escape($string)
  * @param string $func
  *
  * @author Andreas Gohr <andi@splitbrain.org>
+ *
+ * @psalm-taint-sink html $func
+ *   Echoes $func unescaped inside a jQuery() bootstrap call; tainted input
+ *   would be injected directly into the JS response body.
  */
 function js_runonstart($func)
 {
