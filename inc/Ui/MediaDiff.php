@@ -30,6 +30,9 @@ class MediaDiff extends Diff
      * MediaDiff Ui constructor
      *
      * @param string $id media id
+     *
+     * @psalm-taint-sink html $id
+     * Evidence: $id is stored on the instance and emitted into HTML attributes via show()/showImageDiff()/showFileDiff().
      */
     public function __construct($id)
     {
@@ -118,6 +121,9 @@ class MediaDiff extends Diff
      * Shows difference between two revisions of media
      *
      * @author Kate Arzamastseva <pshns@ukr.net>
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $this->id, RevInfo data and Form output.
      */
     public function show()
     {
