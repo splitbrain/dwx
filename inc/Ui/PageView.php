@@ -17,6 +17,9 @@ class PageView extends Ui
      * PageView Ui constructor
      *
      * @param null|string $text wiki text or null for showing $ID
+     *
+     * @psalm-taint-sink html $text
+     * Evidence: $text is rendered through p_render('xhtml', ...) and echoed by show().
      */
     public function __construct($text = null)
     {
@@ -30,6 +33,9 @@ class PageView extends Ui
      * @author   Andreas Gohr <andi@splitbrain.org>
      *
      * @triggers HTML_SHOWREV_OUTPUT
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $this->text via p_render and from p_wiki_xhtml/$ID/$REV.
      */
     public function show()
     {
@@ -76,6 +82,9 @@ class PageView extends Ui
      * Show a revision warning
      *
      * @author Szymon Olewniczak <dokuwiki@imz.re>
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes the 'showrev' locale HTML directly to output.
      */
     public function showrev()
     {
