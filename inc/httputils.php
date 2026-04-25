@@ -63,6 +63,7 @@ function http_conditionalRequest($timestamp)
  * @returns  void or exits with previous header() commands executed
  * @author Chris Smith <chris@jalakai.co.uk>
  *
+ * @psalm-taint-sink file $file
  */
 function http_sendfile($file)
 {
@@ -194,6 +195,7 @@ function http_rangeRequest($fh, $size, $mime)
  * @return bool
  * @author Chris Smith <chris.eureka@jalakai.co.uk>
  *
+ * @psalm-taint-sink file $uncompressed_file
  */
 function http_gzip_valid($uncompressed_file)
 {
@@ -216,6 +218,7 @@ function http_gzip_valid($uncompressed_file)
  *
  * @param string $cache cache file name
  * @param bool $cache_ok if cache can be used
+ * @psalm-taint-sink file $cache
  */
 function http_cached($cache, $cache_ok)
 {
