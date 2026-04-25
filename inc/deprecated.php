@@ -169,6 +169,8 @@ class IXR_Value extends \IXR\DataType\Value
  * @param string $string  line of text
  * @param int    $indent  number of spaces indention
  * @deprecated 2023-08-31 use echo instead
+ *
+ * @psalm-taint-sink html the string is concatenated and echoed verbatim
  */
 function ptln($string, $indent = 0)
 {
