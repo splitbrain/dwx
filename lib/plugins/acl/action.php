@@ -33,6 +33,10 @@ class action_plugin_acl extends ActionPlugin
      * @param Event $event  event object by reference
      * @param mixed $param  empty
      * @return void
+     *
+     * @psalm-taint-sink html echoes raw HTML for AJAX responses: delegates
+     *     to admin_plugin_acl::printInfo() or html_buildlist() output, both
+     *     of which are HTML sinks.
      */
     public function handleAjaxCallAcl(Event $event, $param)
     {

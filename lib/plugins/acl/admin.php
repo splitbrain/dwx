@@ -178,6 +178,10 @@ class admin_plugin_acl extends AdminPlugin
      *
      * @author  Frank Schubert <frank@schokilade.de>
      * @author  Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html admin plugin html() emits UI: echoes div markup,
+     *     getLang strings, and delegates to makeExplorer/printDetail/printInfo
+     *     /printAclTable which all echo HTML directly.
      */
     public function html()
     {
@@ -227,6 +231,10 @@ class admin_plugin_acl extends AdminPlugin
      * Display a tree menu to select a page or namespace
      *
      * @author Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html echoes the tree-list HTML returned by
+     *     html_buildlist() with makeTreeItem/makeListItem callbacks that
+     *     concatenate raw markup.
      */
     protected function makeExplorer()
     {
@@ -343,6 +351,10 @@ class admin_plugin_acl extends AdminPlugin
      * selectors and modification form
      *
      * @author Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html echoes the form markup directly; $this->who and
+     *     $this->ns flow into hidden input values via hsc(), but the
+     *     surrounding tags are emitted as the sink.
      */
     protected function printDetail()
     {
@@ -376,6 +388,10 @@ class admin_plugin_acl extends AdminPlugin
      * Print info and editor
      *
      * also loaded via Ajax
+     *
+     * @psalm-taint-sink html echoes locale_xhtml output and delegates to
+     *     printExplanation/printAclEditor which echo HTML directly. Also
+     *     echoes a printf'd message that inlines hsc()'d $this->ns or $ID.
      */
     public function printInfo()
     {
@@ -405,6 +421,9 @@ class admin_plugin_acl extends AdminPlugin
      * Display the ACL editor
      *
      * @author Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html echoes fieldset markup and delegates to
+     *     makeCheckboxes() whose return value is concatenated into the page.
      */
     protected function printAclEditor($current)
     {
@@ -433,6 +452,10 @@ class admin_plugin_acl extends AdminPlugin
      * Explain the currently set permissions in plain english/$lang
      *
      * @author Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html echoes paragraph markup with printf format
+     *     strings interpolating hsc()'d $who/$ns/$ID into a translated
+     *     template; surrounding tags are the sink.
      */
     protected function printExplanation($current)
     {
@@ -631,6 +654,10 @@ class admin_plugin_acl extends AdminPlugin
      * Display all currently set permissions in a table
      *
      * @author Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html echoes the full ACL table markup directly:
+     *     where/who tokens from $this->acl are emitted via hsc(), plus
+     *     hidden inputs with hsc()'d $this->ns/$ID/$this->who.
      */
     protected function printAclTable()
     {
@@ -808,6 +835,10 @@ class admin_plugin_acl extends AdminPlugin
      * Print a user/group selector (reusing already used users and groups)
      *
      * @author  Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html echoes the select element markup directly with
+     *     hsc()'d option labels/values from $this->specials and
+     *     $this->usersgroups.
      */
     protected function makeSelect()
     {
