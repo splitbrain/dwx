@@ -863,6 +863,15 @@ function auth_aclcheck_cb($data)
  * @param string $name
  * @param bool $skip_group
  * @return string
+ *
+ * @psalm-taint-escape html every byte that could form `<`, `>`, `"`,
+ *     `'`, `&` is in the percent-encoded ranges (0x00-0x2f, 0x3a-0x40,
+ *     0x5b-0x60, 0x7b-0x7f); raw 0x80+ bytes pass through but cannot
+ *     synthesise ASCII metacharacters.
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-escape file `/`, `\`, `.`, null bytes are all encoded.
+ * @psalm-taint-escape shell `;`, `&`, `|`, `>`, `<`, `$`, backtick,
+ *     newlines and whitespace are all encoded.
  */
 function auth_nameencode($name, $skip_group = false)
 {
