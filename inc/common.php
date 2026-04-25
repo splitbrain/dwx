@@ -1937,6 +1937,7 @@ function stripsourcemaps(&$text)
  * @param string $file full path to the SVG file
  * @param int $maxsize maximum allowed size for the SVG to be embedded
  * @return string|false the SVG content, false if the file couldn't be loaded
+ * @psalm-taint-sink file $file
  */
 function inlineSVG($file, $maxsize = 2048)
 {
