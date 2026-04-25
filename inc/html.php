@@ -60,6 +60,7 @@ function html_wikilink($id, $name = null, $search = '')
  * @author   Andreas Gohr <andi@splitbrain.org>
  *
  * @param bool $svg Whether to show svg icons in the register and resendpwd links or not
+ * @psalm-taint-sink html $svg evidence: passed to (new Login($svg))->show() which renders HTML
  * @deprecated 2020-07-18
  */
 function html_login($svg = false)
@@ -263,6 +264,7 @@ function html_showrev()
  * @author Andreas Gohr <andi@splitbrain.org>
  *
  * @param null|string $txt wiki text or null for showing $ID
+ * @psalm-taint-sink html $txt evidence: passed to (new PageView($txt))->show() which renders HTML
  * @deprecated 2020-07-18
  */
 function html_show($txt = null)
@@ -335,6 +337,8 @@ function html_locked()
  *
  * @param int $first skip the first n changelog lines
  * @param string $media_id id of media, or empty for current page
+ * @psalm-taint-sink html $first evidence: passed to (Page|Media)Revisions->show($first) which renders HTML
+ * @psalm-taint-sink html $media_id evidence: passed to new MediaRevisions($media_id) which renders HTML
  * @deprecated 2020-07-18
  */
 function html_revisions($first = -1, $media_id = '')
@@ -358,6 +362,8 @@ function html_revisions($first = -1, $media_id = '')
  *
  * @param int $first
  * @param string $show_changes
+ * @psalm-taint-sink html $first evidence: passed to (new Recent($first, $show_changes))->show() which renders HTML
+ * @psalm-taint-sink html $show_changes evidence: passed to (new Recent($first, $show_changes))->show() which renders HTML
  * @deprecated 2020-07-18
  */
 function html_recent($first = 0, $show_changes = 'both')
@@ -372,6 +378,7 @@ function html_recent($first = 0, $show_changes = 'both')
  * @author Andreas Gohr <andi@splitbrain.org>
  *
  * @param string $ns
+ * @psalm-taint-sink html $ns evidence: passed to (new Index($ns))->show() which renders HTML
  * @deprecated 2020-07-18
  */
 function html_index($ns)
@@ -555,6 +562,9 @@ function html_diff_head($l_rev, $r_rev, $id = null, $media = false, $inline = fa
  * @param  string $text  when non-empty: compare with this text with most current version
  * @param  bool   $intro display the intro text
  * @param  string $type  type of the diff (inline or sidebyside)
+ * @psalm-taint-sink html $text evidence: passed to PageDiff->compareWith($text) and rendered via show()
+ * @psalm-taint-sink html $intro evidence: passed via preference(['showIntro' => $intro]) into PageDiff HTML output
+ * @psalm-taint-sink html $type evidence: passed via preference(['difftype' => $type]) into PageDiff HTML output
  * @deprecated 2020-07-18
  */
 function html_diff($text = '', $intro = true, $type = null)
@@ -619,6 +629,8 @@ function html_insert_softbreaks($diffhtml)
  *
  * @param string $text
  * @param string $summary
+ * @psalm-taint-sink html $text evidence: passed to (new PageConflict($text, $summary))->show() which renders HTML
+ * @psalm-taint-sink html $summary evidence: passed to (new PageConflict($text, $summary))->show() which renders HTML
  * @deprecated 2020-07-18
  */
 function html_conflict($text, $summary)
@@ -700,6 +712,7 @@ function html_edit()
  * Is the default action for HTML_EDIT_FORMSELECTION.
  *
  * @param array $param
+ * @psalm-taint-sink html $param evidence: passed to (new Editor())->addTextarea($param) which renders HTML
  * @deprecated 2020-07-18
  */
 function html_edit_form($param)
@@ -712,6 +725,7 @@ function html_edit_form($param)
  * prints some debug info
  *
  * @author Andreas Gohr <andi@splitbrain.org>
+ * @psalm-taint-sink html evidence: echoes attacker-influenced superglobals ($_SERVER, $INFO, etc.) directly into HTML
  */
 function html_debug()
 {
@@ -890,6 +904,7 @@ function html_mktocitem($link, $text, $level, $hash = '#')
  *
  * @param string     $name The name of the form
  * @param Doku_Form  $form The form
+ * @psalm-taint-sink html $form evidence: dispatched via Event to html_form_output which calls $form->printForm()
  * @return void
  * @deprecated 2020-07-18
  */
@@ -906,6 +921,7 @@ function html_form($name, $form)
  * Just calls printForm() on the form object.
  *
  * @param Doku_Form $form The form
+ * @psalm-taint-sink html $form evidence: calls $form->printForm() which echoes HTML
  * @return void
  * @deprecated 2020-07-18
  */
@@ -998,6 +1014,7 @@ function html_flashobject($swf, $width, $height, $params = null, $flashvars = nu
  *
  * @param array  $tabs        tab structure
  * @param string $current_tab the current tab id
+ * @psalm-taint-sink html $tabs evidence: echoes <ul> and dispatches each $tab to html_tab() which echoes anchor HTML
  * @return void
  */
 function html_tabs($tabs, $current_tab = null)
@@ -1020,6 +1037,8 @@ function html_tabs($tabs, $current_tab = null)
  * @param string $href - tab href
  * @param string $caption - tab caption
  * @param boolean $selected - is tab selected
+ * @psalm-taint-sink html $href evidence: echoed inside <a href="..."> (only hsc()-escaped, still an HTML sink)
+ * @psalm-taint-sink html $caption evidence: echoed as anchor/strong inner text (only hsc()-escaped, still an HTML sink)
  * @return void
  */
 
