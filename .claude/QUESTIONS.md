@@ -30,6 +30,18 @@ a user-controlled key (unusual but possible) will punch through the
 escape. Worth a scan during M3 for callers that build `$params` from
 `$INPUT->*` keys.
 
+### **M2-03** `SafeFN::encode()` encodes bytes, does not block path traversal
+
+`inc/SafeFN.class.php:49` produces ASCII output using only
+`0-9a-z_.-%/[]`. The `plain` set includes both `.` and `/`, so an input
+containing `../foo/bar` is returned verbatim (all characters are already
+plain). It protects against non-ASCII bytes, null bytes, backslashes,
+and control characters — but not path traversal. Following the same
+reasoning as utf8_encodeFN, I left it unannotated. If the reviewer
+wants `file` scope applied on the grounds that the caller is expected
+to pre-clean the input (in practice `cleanID()` runs upstream), say so
+and I will add the annotation with a justification note.
+
 ### **M2-02** `utf8_encodeFN()` is not a path-traversal sanitizer
 
 `inc/pageutils.php:703` has two passthrough branches: (a)
