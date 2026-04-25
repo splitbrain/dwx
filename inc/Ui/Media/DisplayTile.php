@@ -27,6 +27,9 @@ class DisplayTile extends Display
 
     /**
      * Display the tile
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $this->mediaFile getters and $this->mmUrl.
      */
     public function show()
     {
