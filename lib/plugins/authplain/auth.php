@@ -360,6 +360,10 @@ class auth_plugin_authplain extends AuthPlugin
      *
      * @param string $user
      * @return string
+     *
+     * @psalm-taint-escape file delegates to cleanID() (annotated as
+     *     `@psalm-taint-escape file`) after replacing `:`, `/`, `;` with the
+     *     configured separator char.
      */
     public function cleanUser($user)
     {
@@ -373,6 +377,10 @@ class auth_plugin_authplain extends AuthPlugin
      *
      * @param string $group
      * @return string
+     *
+     * @psalm-taint-escape file delegates to cleanID() (annotated as
+     *     `@psalm-taint-escape file`) after replacing `:`, `/`, `;` with the
+     *     configured separator char.
      */
     public function cleanGroup($group)
     {
