@@ -28,6 +28,7 @@ use dokuwiki\Utf8\PhpString;
  * @author Ben Coburn <btcoburn@silicodon.net>
  * @author Gerry Weissbach <dokuwiki@gammaproduction.de>
  *
+ * @psalm-taint-sink file $file
  */
 function sendFile($file, $mime, $dl, $cache, $public = false, $orig = null, $csp = [])
 {
