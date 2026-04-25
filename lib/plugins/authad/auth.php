@@ -303,6 +303,10 @@ class auth_plugin_authad extends AuthPlugin
      * @author  James Van Lommel (jamesvl@gmail.com)
      * @param string $group
      * @return string
+     *
+     * @psalm-taint-escape file strips characters used by the ACL file format
+     *     (backslash, hash) and folds whitespace to underscore, then
+     *     lowercases. Output is safe to embed in conf/acl.auth.php lines.
      */
     public function cleanGroup($group)
     {
@@ -321,6 +325,10 @@ class auth_plugin_authad extends AuthPlugin
      * @author Andreas Gohr <gohr@cosmocode.de>
      * @param string $user
      * @return string
+     *
+     * @psalm-taint-escape file splits NTLM/Kerberos domain prefix or suffix,
+     *     lowercases and trims both halves, drops unknown domains, and
+     *     reassembles user@domain. Output is normalized for ACL storage.
      */
     public function cleanUser($user)
     {
