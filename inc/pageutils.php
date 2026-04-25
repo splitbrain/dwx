@@ -381,6 +381,11 @@ function wikiFN($raw_id, $rev = '', $clean = true)
  *
  * @param string $id page id
  * @return string full path
+ *
+ * @psalm-taint-escape file $id is unconditionally cleanID()'d and the
+ *     result is then md5()'d, so any caller-controlled bytes are
+ *     reduced to 32 hex chars before being concatenated into the
+ *     lockdir path. The trailing `.lock` literal seals the path.
  */
 function wikiLockFN($id)
 {
@@ -397,6 +402,13 @@ function wikiLockFN($id)
  * @param string $id   page id
  * @param string $ext  file extension
  * @return string full path
+ *
+ * @psalm-taint-escape file $id is unconditionally cleanID()'d before
+ *     being composed into the path; cleanID strips path-traversal
+ *     sequences. NOTE: $ext is concatenated raw and is treated as a
+ *     caller-controlled literal in core (e.g. `.meta`, `.indexed`); a
+ *     caller forwarding user input into $ext would punch through this
+ *     escape.
  */
 function metaFN($id, $ext)
 {
@@ -416,6 +428,10 @@ function metaFN($id, $ext)
  * @param string $id   media id
  * @param string $ext  extension of media
  * @return string
+ *
+ * @psalm-taint-escape file $id is unconditionally cleanID()'d before
+ *     being composed into the path. Same $ext caveat as metaFN(): $ext
+ *     is concatenated raw and is treated as a caller-controlled literal.
  */
 function mediaMetaFN($id, $ext)
 {
@@ -435,6 +451,10 @@ function mediaMetaFN($id, $ext)
  *
  * @param string $id page id
  * @return array
+ *
+ * @psalm-taint-escape file delegates to metaFN($id, '') which
+ *     unconditionally cleanID()'s $id; the subsequent glob() results
+ *     are filtered by a regex anchored on the cleaned basename.
  */
 function metaFiles($id)
 {
@@ -563,6 +583,10 @@ function resolve_id($ns, $id, $clean = true)
  * @param int|string $rev
  * @param bool $date_at
  * @deprecated 2020-09-30
+ *
+ * @psalm-taint-escape ($media) file MediaResolver::resolveId()
+ *     unconditionally wraps its return in cleanID(); the $media ref is
+ *     overwritten with that result before this function returns.
  */
 function resolve_mediaid($ns, &$media, &$exists, $rev = '', $date_at = false)
 {
@@ -581,6 +605,11 @@ function resolve_mediaid($ns, &$media, &$exists, $rev = '', $date_at = false)
  * @param bool &$exists (reference) updated with existance of media
  * @param string $rev
  * @param bool $date_at
+ *
+ * @psalm-taint-escape ($page) file PageResolver::resolveId() ends with
+ *     `$id = cleanID($id)` and only reappends an already-cleanID'd
+ *     `#$hash` fragment; the $page ref is overwritten with that result
+ *     before this function returns.
  */
 function resolve_pageid($ns, &$page, &$exists, $rev = '', $date_at = false)
 {
