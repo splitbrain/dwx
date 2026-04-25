@@ -17,6 +17,8 @@ class UserRegister extends Ui
      * @return void
      * @author   Andreas Gohr <andi@splitbrain.org>
      *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $INPUT, $lang and Form output.
      */
     public function show()
     {
