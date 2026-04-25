@@ -112,3 +112,22 @@ Findings: 1 finding total, 0 in any narrow scope (html/file/shell/sql/has_quotes
 This is a strong signal but not a guarantee: it means the analyzer cannot construct a taint flow from a known source to a known sink given the current annotation set. False *positives* would still be visible (this is how we caught the Logger one). False *negatives* — a tainted flow to an UNANNOTATED sink — won't show up until M4/M5 lay down sink annotations. M4 is therefore expected to *increase* the finding count as new sinks are annotated.
 
 Next milestone (M4) breaks down into ptln() and the inc/Ui/* + inc/Form/* HTML emitters. Tasks scaffolded in TASKS.md.
+
+## Milestone 4 (inc/) summary
+
+2026-04-25 M4-01 done — `ptln()` in inc/deprecated.php annotated.
+2026-04-25 M4-02 done — survey of inc/html.php's 43 functions: 13 emit_dynamic, 9 emit_static_only, 16 build, 5 neither.
+2026-04-25 M4-03 done — 13 dynamic emitters in inc/html.php annotated, parameter-narrowed where applicable.
+2026-04-25 M4-04 done — survey of 25 files in inc/Ui/*: 21 emit_dynamic show()/showrev() methods across 19 concrete classes.
+2026-04-25 M4-05 done — 20 inc/Ui files annotated; 21 show methods + 14 constructor/setter params marked. One commit per file.
+2026-04-25 M4-06 done — psalm re-run: **byte-identical to baseline**, 1 carryover finding (the documented Logger TaintedExtract FP), 0 new, 0 resolved. Scope grew to 584 files (vs. ~476) due to lib/tpl/dokuwiki addition.
+
+Net M4 result: 35+ HTML sinks now declared; psalm reports zero new flows. Two interpretations sit side-by-side:
+
+(a) **Closed-graph good news.** M1+M2 cover sources/escapes tightly enough that every reachable flow is sanitized. The annotation work is doing its job.
+
+(b) **Trace damping.** The framework's heavy use of `Event::createAndTrigger` and dynamic action dispatch may break psalm's def-use chains before they reach the new sinks. We'd see 0 findings either way.
+
+Distinguishing (a) from (b) requires a confirmation experiment: temporarily inject a known-tainted value at a callsite that should reach a marked sink, and verify psalm flags it. That's tracked under "future work" in QUESTIONS.md rather than as a blocking milestone item.
+
+The lib/tpl/dokuwiki scope addition produced no parser/config issues. The .claude/psalm-m4.json artifact (now gitignored) captures the full report.

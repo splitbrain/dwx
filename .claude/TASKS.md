@@ -140,29 +140,14 @@ sinks come online and previously-untraced flows are caught.
 
 ### Task list
 
-- [pending] M4-01 — `inc/deprecated.php`: `ptln()` always echoes its
-  argument. Annotate `@psalm-taint-sink html`. Note `@deprecated` tag
-  in the existing docblock — annotation still useful for plugin
-  back-compat scans.
-- [pending] M4-02 — Survey `inc/html.php` (43 functions) — classify
-  each as `emit` (echoes/prints) vs `build` (returns string). No
-  source edits in this task; produce a list back to the orchestrator
-  via JSON `survey: { emit: [...], build: [...] }`. The orchestrator
-  uses this to scope M4-03.
-- [pending] M4-03 — Annotate the M4-02 `emit` set with
-  `@psalm-taint-sink html`. Group commits by reasonable thematic
-  chunks if the list is large; one commit per file is fine here since
-  the file is one big collection of free functions.
-- [pending] M4-04 — Survey `inc/Ui/*` — for each class, classify the
-  `show()` / `toHTML()` / `tplCommon()` etc. method as emit vs build
-  vs neither. Same JSON-back pattern as M4-02. Note any classes that
-  use Form/HTMLElement internally — those are likely return-only.
-- [pending] M4-05 — Annotate the M4-04 `emit` set. Per-class commits.
-- [pending] M4-06 — Re-run `vendor/bin/psalm --taint-analysis`,
-  capture finding count and breakdown deltas vs the M3-01 baseline.
-  If new findings surface, append a triage block to PROGRESS.md and,
-  if any are real bugs, log to QUESTIONS.md. (M5 will further triage
-  these once file-I/O sinks are also annotated.)
+- [done] M4-01 — `inc/deprecated.php::ptln()` annotated.
+- [done] M4-02 — survey of inc/html.php (43 funcs); 13 emit_dynamic.
+- [done] M4-03 — 13 dynamic emitters in inc/html.php annotated.
+- [done] M4-04 — survey of inc/Ui/* (25 files); 21 emit_dynamic methods.
+- [done] M4-05 — 20 inc/Ui files annotated, 21 show methods + 14
+  constructor/setter params marked, 20 file-grained commits.
+- [done] M4-06 — psalm re-run: 1 carryover, 0 new, 0 resolved
+  (byte-identical to baseline).
 
 ### Notes for M4 subagents
 
