@@ -173,31 +173,32 @@ code except `_test/` and `vendor/` is in scope, including `lib/exe`,
 includes `lib/tpl/dokuwiki`. The work below is **additive** — M1, M2,
 M3-baseline, and the inc/ portion of M4 stand as already done.
 
-- [pending] M2-supp-01 — Sanitizer scan of `lib/exe/*.php` (entry-point
-  scripts: ajax.php, css.php, fetch.php, indexer.php, js.php,
-  manifest.php, mediamanager.php, opensearch.php, taskrunner.php,
-  xmlrpc.php). Likely few sanitizers; mostly entry-point scaffolding
-  that calls into inc/ code. Survey first, annotate any local
-  sanitizers, escalate the rest.
-- [pending] M2-supp-02 — Sanitizer scan of `lib/tpl/dokuwiki/`. The
-  template has its own `tpl_*` helpers; identify any that strip or
-  encode strings.
-- [pending] M2-supp-03 — Sanitizer scan of bundled plugins. One subagent
-  per plugin or grouped by 3-4 plugins, depending on size. Plugins:
-  acl, authad, authldap, authpdo, authplain, config, extension, info,
-  logviewer, popularity, revert, safefnrecode, styling, testing,
-  usermanager. Plus the standalone base classes
-  `lib/plugins/{action,admin,auth,cli,remote,syntax}.php`. Each plugin
-  task ends with one commit covering that plugin's annotations.
-- [pending] M4-supp-01 — Output-sink scan of `lib/exe/*.php`. Entry
-  points typically end with `header()` + `echo` patterns; mark sinks.
-- [pending] M4-supp-02 — Output-sink scan of `lib/tpl/dokuwiki/`.
-  Templates emit lots of HTML; mark `tpl_*` helpers that echo
-  parameter-derived content as html sinks.
-- [pending] M4-supp-03 — Output-sink scan of bundled plugins (one
-  task per plugin like M2-supp-03). Pay attention to admin-plugin
-  `html()` methods (admin.php base class declares it) and
-  syntax-plugin `render()` methods (syntax.php base class).
+- [done] M2-supp-01/M4-supp-01 — `lib/exe/`. js.php::js_runonstart
+  annotated as html sink (commit 4901b4aa). Scan of remaining 13
+  entry points (ajax/css/detail/fetch/indexer/jquery/jsonrpc/manifest/
+  mediamanager/openapi/opensearch/taskrunner/xmlrpc) found no
+  candidates: linear top-level dispatchers covered by psalm's
+  builtin echo sink, no parameter-echoing helpers.
+- [done] M2-supp-02/M4-supp-02 — `lib/tpl/dokuwiki/`. 35 files
+  scanned (5 root templates + 1 CLI helper + 29 lang files); no
+  function-level annotations needed. Top-level template chrome
+  covered by builtin sink; lang/ files are array assignments only.
+- [done] M2-supp-03/M4-supp-03 — bundled plugins. 11 of 15 modified:
+    * authplain (M2-supp commit f883be3d)
+    * acl (02a370a2), authad (4b8ddb38), authldap (93919e44),
+      config (ae319008), extension (d82fcda1), logviewer (bafbd5ca),
+      popularity (a716f46c), revert (24ecf549), styling (5599cd8a),
+      usermanager (7dc3a475)
+  Skipped (correctly): authpdo (PDO bind, not a string sanitizer),
+  info (syntax → renderer doc), safefnrecode (action plugin),
+  testing (action plugin).
+- [done] M4-supp-04 — standalone plugin base files
+  `lib/plugins/{action,admin,auth,cli,remote,syntax}.php` are 9-line
+  deprecated autoload-only stubs with no class declarations. Nothing
+  to annotate.
+- [done] M4-supp-99 — psalm re-run after all supplemental work.
+  Byte-identical to baseline (1 carryover Logger TaintedExtract,
+  0 new, 0 resolved). Reports at /tmp/psalm-supp.{json,txt}.
 - [pending] M5-supp — File-I/O sinks across `lib/exe`, `lib/tpl/dokuwiki`,
   bundled plugins. Will be planned in detail when M5 starts.
 

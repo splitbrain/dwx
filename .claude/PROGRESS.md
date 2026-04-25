@@ -131,3 +131,45 @@ Net M4 result: 35+ HTML sinks now declared; psalm reports zero new flows. Two in
 Distinguishing (a) from (b) requires a confirmation experiment: temporarily inject a known-tainted value at a callsite that should reach a marked sink, and verify psalm flags it. That's tracked under "future work" in QUESTIONS.md rather than as a blocking milestone item.
 
 The lib/tpl/dokuwiki scope addition produced no parser/config issues. The .claude/psalm-m4.json artifact (now gitignored) captures the full report.
+
+## Supplemental scope (M*-supp)
+
+Reviewer-requested scope expansion to cover all repo PHP except `_test/` and `vendor/`. Done via parallel subagents over disjoint paths.
+
+2026-04-25 M4-supp lib/exe/js.php commit=4901b4aa — js_runonstart annotated as html sink (echoes `$func` body).
+2026-04-25 M4-supp-01 lib/exe (excl js.php) — surveyed all 13 entry points; all are linear top-level dispatchers with builtin echo coverage. **0 commits.**
+2026-04-25 M4-supp-02 lib/tpl/dokuwiki — surveyed 35 files (5 root templates + 1 CLI helper + 29 lang). Top-level template chrome is covered by builtin echo sink; lang/ files are array assignments; CLI helper does not echo HTML. **0 commits.**
+2026-04-25 M2-supp authplain commit=f883be3d — cleanUser, cleanGroup as file escapes.
+2026-04-25 M4-supp logviewer commit=bafbd5ca, styling commit=5599cd8a, popularity commit=a716f46c, revert commit=24ecf549 — admin html() sinks annotated.
+2026-04-25 M4-supp-03 batch A:
+  - acl commit=02a370a2 — admin html() + 7 print/make helpers + action handleAjaxCallAcl (9 html sinks).
+  - authad commit=4b8ddb38 — cleanUser, cleanGroup as file escapes.
+  - authldap commit=93919e44 — filterEscape as ldap escape.
+  - authpdo skipped — uses inherited base methods + PDO bind (not a sanitizer-style escape).
+  - config commit=ae319008 — html(), printH1() as html sinks.
+2026-04-25 M4-supp-03 batch B:
+  - extension commit=d82fcda1 — html() as html sink.
+  - usermanager commit=7dc3a475 — html(), htmlUserForm, htmlInputField, htmlFilterSettings, htmlImportForm as html sinks; htmlFilter as html escape (returns hsc'd value).
+  - info, safefnrecode, testing skipped — syntax/action plugins with no UI sinks.
+2026-04-25 M4-supp-04 standalone base classes — lib/plugins/{action,admin,auth,cli,remote,syntax}.php are 9-line deprecated autoload-only stubs with no class declarations. Nothing to annotate. **0 commits.**
+2026-04-25 M4-supp-99 done — psalm re-run after all supplemental annotations. **Byte-identical to baseline again.** Total 1 finding (Logger TaintedExtract carryover), 0 new, 0 resolved. Reports at /tmp/psalm-supp.{json,txt}.
+
+## Supplemental milestone summary
+
+13 plugin/file annotation commits added across 11 plugins + 1 lib/exe file. lib/exe-other and lib/tpl/dokuwiki had no annotation candidates after careful read; the standalone plugin base files are deprecated stubs.
+
+Annotations added in supplemental scope:
+- **html sinks** — 17+ admin-plugin echo helpers (acl, config, extension, logviewer, popularity, revert, styling, usermanager) + js_runonstart.
+- **html escapes** — usermanager.htmlFilter (one).
+- **file escapes** — authplain, authad cleanUser/cleanGroup pairs.
+- **ldap escapes** — authldap.filterEscape.
+
+The post-supplemental psalm result is once again byte-identical to baseline: 1 finding (the Logger TaintedExtract FP), 0 new, 0 resolved. Three independent psalm runs (M3-01 baseline → M4-06 → M4-supp-99) all produce the same single finding.
+
+Two interpretations remain:
+- **Closed-graph good news:** every reachable input flow is sanitized en route, including all the new sinks in plugin admin pages.
+- **Trace damping:** psalm's flow analysis is bounded by framework indirection and may not be exercising the new sinks. Concrete spot-check: usermanager.htmlInputField interpolates `$id`/`$name` unescaped, but its callers (lines 414-459) all pass literal strings and `$cmd . "_userid"`-style fixed concatenations — so even a properly-traced analysis would find no taint here. That's at least one non-damping data point.
+
+Distinguishing (a) from (b) needs a synthetic-source experiment (inject a tainted value at a known-reachable site, confirm a marked sink fires). Logged in QUESTIONS.md as future work; not blocking.
+
+The branch `claude/psalm-taint-annotations-awJGq` now carries the full M1+M2+M3+M4 (inc + supp) annotation set across inc/, lib/exe, lib/tpl/dokuwiki, and 11 of 15 bundled plugins. M5 (file-I/O sinks) remains.

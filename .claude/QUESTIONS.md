@@ -173,3 +173,58 @@ The orchestrator transcribed the data the subagent had captured to
 need to write under `.claude/` so the issue did not recur. If future
 triage tasks need direct subagent writes, the sandbox config will need
 the path opened.
+
+---
+
+## MILESTONE 4 (incl. supplemental scope) REVIEW REQUEST
+
+### Summary
+
+Inc/-side M4 (M4-01..06) plus supplemental scope (lib/exe, lib/tpl/dokuwiki,
+11 of 15 bundled plugins) is closed. 50+ sink/escape annotations added
+across 21 inc/ files + 11 plugins + 1 lib/exe entry point. Three
+independent psalm runs (baseline, post-M4-inc, post-supplemental) all
+produce **byte-identical** results: 1 finding total, the documented
+Logger TaintedExtract FP. Zero new findings, zero resolved.
+
+### Decisions worth your eye
+
+1. **Three psalm runs, identical output.** Each annotation pass added
+   real sinks but produced no new findings. We have two interpretations
+   (closed-graph correctness vs. trace damping through framework
+   indirection) and one weak data point against trace damping
+   (usermanager.htmlInputField callers all pass literals/concatenations
+   that wouldn't trigger even a perfectly-traced analysis). A synthetic
+   tainted-source experiment is the proper proof; logged below as
+   future work.
+2. **authpdo, info, safefnrecode, testing skipped.** authpdo uses PDO
+   bindValue (not a string sanitizer). info is a syntax plugin (writes
+   to `$renderer->doc`, not a direct sink). safefnrecode and testing
+   are action plugins with no UI sinks. Skipping means these plugins
+   contribute zero annotations; if you want stub `@psalm-suppress`
+   notes for future readers, say so.
+3. **lib/exe and lib/tpl/dokuwiki produced 0 commits each.** lib/exe
+   entry points are linear top-level dispatchers (psalm builtin echo
+   sink covers them); lib/tpl/dokuwiki files are top-level template
+   chrome plus 29 lang/*.php array assignments. The one exception is
+   lib/exe/js.php::js_runonstart, annotated separately.
+4. **Standalone plugin base files are deprecated stubs.** All six of
+   `lib/plugins/{action,admin,auth,cli,remote,syntax}.php` are 9-line
+   DebugHelper deprecation warnings. Real base classes are in
+   `inc/Extension/`. Nothing to annotate.
+
+### Future work (logged, not blocking)
+
+- **Synthetic-source experiment.** Inject a known-tainted value at a
+  callsite that should reach a marked sink (e.g. directly bind a
+  `@psalm-taint-source input` to one of usermanager.htmlInputField's
+  $value-flow callers) and confirm psalm flags the resulting trace.
+  This distinguishes closed-graph correctness from trace damping. One
+  branch, one test annotation, one psalm run; revert when done.
+- **M5 file-I/O sinks.** fopen/file_put_contents/io_saveFile and
+  related across inc/, lib/exe, lib/tpl/dokuwiki, and the bundled
+  plugins. Scaffolded in TASKS.md as M5-supp.
+- **htmlInputField $id/$name caveat.** The parameters are interpolated
+  unescaped. Current callers all pass literals; if a future caller
+  passes user input through, the sink annotation will fire. Worth a
+  comment in the function body, but not in scope for this branch.
