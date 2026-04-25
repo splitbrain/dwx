@@ -81,7 +81,14 @@ fresh triage subagent per iteration with a clean context.
   TaintedExtract at inc/Logger.php:190. No html/file/shell/sql/etc.
   findings. Environment is clean (no php-ixr loader noise). Subagent
   blocked on `.claude/` writes; orchestrator finished bookkeeping.
-- [pending] M3-02 — Triage iteration 1. Read the M3-01 finding list,
+- [done] M3-02 — Triage iteration 1. Single finding disposed as known
+  FP. `Logger::formatLogLines` is protected with literal-key `$data`,
+  so `extract()` cannot create attacker-named variables. Reasoning in
+  PROGRESS.md.
+- [skipped] M3-03 — Triage iteration 2.
+- [skipped] M3-04 — Triage iteration 3.
+- [done] M3-05 — Residual documentation. 1 finding, classified as known
+  FP, 0 real bugs, 0 annotation gaps. M4/M5 scaffolds below stand. Read the M3-01 finding list,
   identify obviously-missed sanitizers (functions clearly named
   `*encode*`, `*sanitize*`, `*escape*`, `*clean*`, `*safe*` or wrapping
   `htmlspecialchars`/`rawurlencode`/`preg_replace` with stripping
@@ -119,8 +126,60 @@ fresh triage subagent per iteration with a clean context.
 
 ---
 
-## M4 — Output sinks (placeholder — populated after M3 review)
+## M4 — Output sinks
 
-## M5 — File-I/O sinks (placeholder — populated after M3 review)
+Annotate functions that emit HTML directly (echo / print / templated
+output) with `@psalm-taint-sink html`. Functions that merely *return*
+HTML strings are NOT sinks — they hand the string to an upstream
+caller, which may or may not be a sink. Be especially careful with the
+Form/Ui classes: most have `toHTML()` methods returning strings, so
+those should be skipped.
 
-## M6 — Developer docs (placeholder — populated after M5 review)
+The expected effect of M4 is that psalm finding counts go *up* as new
+sinks come online and previously-untraced flows are caught.
+
+### Task list
+
+- [pending] M4-01 — `inc/deprecated.php`: `ptln()` always echoes its
+  argument. Annotate `@psalm-taint-sink html`. Note `@deprecated` tag
+  in the existing docblock — annotation still useful for plugin
+  back-compat scans.
+- [pending] M4-02 — Survey `inc/html.php` (43 functions) — classify
+  each as `emit` (echoes/prints) vs `build` (returns string). No
+  source edits in this task; produce a list back to the orchestrator
+  via JSON `survey: { emit: [...], build: [...] }`. The orchestrator
+  uses this to scope M4-03.
+- [pending] M4-03 — Annotate the M4-02 `emit` set with
+  `@psalm-taint-sink html`. Group commits by reasonable thematic
+  chunks if the list is large; one commit per file is fine here since
+  the file is one big collection of free functions.
+- [pending] M4-04 — Survey `inc/Ui/*` — for each class, classify the
+  `show()` / `toHTML()` / `tplCommon()` etc. method as emit vs build
+  vs neither. Same JSON-back pattern as M4-02. Note any classes that
+  use Form/HTMLElement internally — those are likely return-only.
+- [pending] M4-05 — Annotate the M4-04 `emit` set. Per-class commits.
+- [pending] M4-06 — Re-run `vendor/bin/psalm --taint-analysis`,
+  capture finding count and breakdown deltas vs the M3-01 baseline.
+  If new findings surface, append a triage block to PROGRESS.md and,
+  if any are real bugs, log to QUESTIONS.md. (M5 will further triage
+  these once file-I/O sinks are also annotated.)
+
+### Notes for M4 subagents
+
+- Form classes (`inc/Form/*`) appear to use a return-string pattern
+  (`Form::toHTML()` builds a string, callers echo it). Skip Form/*
+  in M4 unless a survey turns up an emitter — log to QUESTIONS.md
+  if you find one.
+- `inc/Ui/Login.php` and similar emit `print` directly inside their
+  `show()` methods; those *are* sinks.
+- A function that takes a string parameter and emits it via `echo`
+  is the canonical taint-sink shape: `@psalm-taint-sink html` on the
+  parameter.
+- Functions that emit STATIC strings (no parameters or only literal
+  output) are NOT sinks; nothing to annotate.
+
+---
+
+## M5 — File-I/O sinks (placeholder — populated after M4)
+
+## M6 — Developer docs (placeholder — populated after M5)

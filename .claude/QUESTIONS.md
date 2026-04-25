@@ -129,3 +129,40 @@ to annotate if you read them differently:
 Psalm is installed at `vendor/bin/psalm` (standalone phar). M3 tasks
 are scaffolded in TASKS.md ready for the next run. The first task is
 the baseline psalm run — the finding count delta drives the rest.
+
+---
+
+## MILESTONE 3 REVIEW REQUEST
+
+M3 closed without a stop at the gate per direct instruction to
+continue. The full milestone produced a single finding (TaintedExtract
+in `inc/Logger.php`), disposed as a known false positive — see
+PROGRESS.md for the reasoning. No source edits were made in M3.
+
+### Decisions worth your eye
+
+1. **Logger TaintedExtract.** I chose to *document* the finding rather
+   than add `@psalm-suppress TaintedExtract` to `formatLogLines()`.
+   Rationale in PROGRESS.md. If you'd rather have an explicit
+   suppression in the source for future-readability, say so and I'll
+   add it.
+2. **Skipped iteration loop.** TASKS.md provisioned three triage
+   iterations. With only one finding to triage, M3-03 and M3-04 were
+   marked `skipped`. The implication: once a baseline is clean, the
+   iterate-up-to-3-times rule from ROADMAP becomes a no-op.
+
+### Notable gap (not a question, just visibility)
+
+The "0 narrow-scope findings" result is *consistent with* M1+M2 doing
+their job — but absence of findings does not prove correctness. M4
+will turn on sink-side annotations and is *expected* to produce real
+findings; that's the proof point.
+
+### Process note
+
+The M3-01 baseline subagent's sandbox denied writes under `.claude/`.
+The orchestrator transcribed the data the subagent had captured to
+`.claude/psalm-baseline*` (now gitignored). M3-02's subagent did not
+need to write under `.claude/` so the issue did not recur. If future
+triage tasks need direct subagent writes, the sandbox config will need
+the path opened.

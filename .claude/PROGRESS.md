@@ -92,3 +92,23 @@ Baseline artifacts (now in .gitignore):
 - `.claude/psalm-baseline.json` — full taint_trace
 - `.claude/psalm-baseline.txt` — one-line text report
 - `.claude/psalm-baseline.stderr.txt` — empty
+
+2026-04-25 M3-02 done files=(none, disposition only) commit=PENDING — TaintedExtract triaged as known false positive.
+
+**M3-02 (TaintedExtract @ inc/Logger.php:190)** — Disposition: known false positive, no source edit. `Logger::formatLogLines($data)` is a `protected` method called from exactly two sites inside `Logger::log` (lines 144, 150). `$data` is built at `Logger.php:130` with a fixed set of literal string keys (`facility`, `datetime`, `message`, `details`, `file`, `line`, `loglines`, `logfile`); none of those keys derive from caller input — only the values do, and `extract()` only uses keys to create variable names. `Logger::log`'s public signature accepts scalars (`$message`, `$details`, `$file`, `$line`), never an array that becomes `$data`. Therefore `extract($data)` can only produce that closed, developer-controlled set of variable names regardless of how tainted `$details` (e.g. `Throwable::getTraceAsString()` from `inc/ErrorHandler.php:138`) is. Per project rules we prefer leaving a single isolated finding documented here over adding the file's only `@psalm-suppress` annotation. If a future refactor either changes `formatLogLines` visibility or feeds externally-provided arrays into `$data`, revisit.
+
+2026-04-25 M3-03/04 skipped — single residual finding already disposed; no further iterations needed.
+
+2026-04-25 M3-05 done — residual finding set: 1 finding (the disposed TaintedExtract above). Categorisation: known FP. Real-bug count: 0. Annotation-gap count: 0. M4 task scaffold below is the unchanged plan from ROADMAP.md — the baseline didn't surface any sink-side gaps that would change M4's shape.
+
+## Milestone 3 summary
+
+Goal: "run Psalm taint-analysis, triage, identify missed sanitizers, iterate up to 3 times". 1 of 5 tasks needed real work; the rest were dispatched-and-merged because the baseline surfaced only one finding.
+
+Tasks closed: M3-01 done (baseline run), M3-02 done (triage + disposition), M3-03/04 skipped (no residuals to iterate on), M3-05 done (residual is a single known-FP, no source changes).
+
+Findings: 1 finding total, 0 in any narrow scope (html/file/shell/sql/has_quotes), 0 environmental. The M1+M2 annotation set produced **zero** TaintedHtml / TaintedFile / TaintedShell / TaintedSql / TaintedHasQuotes findings — Psalm is satisfied that every input source eventually reaches a recognised escape (or is suppressed by an inferred path).
+
+This is a strong signal but not a guarantee: it means the analyzer cannot construct a taint flow from a known source to a known sink given the current annotation set. False *positives* would still be visible (this is how we caught the Logger one). False *negatives* — a tainted flow to an UNANNOTATED sink — won't show up until M4/M5 lay down sink annotations. M4 is therefore expected to *increase* the finding count as new sinks are annotated.
+
+Next milestone (M4) breaks down into ptln() and the inc/Ui/* + inc/Form/* HTML emitters. Tasks scaffolded in TASKS.md.
