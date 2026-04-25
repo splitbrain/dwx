@@ -278,6 +278,7 @@ function confToHash($file, $lower = false)
  * @param string $file
  * @return array
  * @throws JsonException
+ * @psalm-taint-sink file $file
  */
 function jsonToArray($file)
 {
