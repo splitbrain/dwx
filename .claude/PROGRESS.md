@@ -53,3 +53,42 @@ Skipped with reasoning (in QUESTIONS.md):
 - `rfc2231_encode()` — diverging branch semantics.
 
 M3 should run psalm-taint and triage from here. Items most likely to yield false negatives next milestone: the conditional sanitizers (`idfilter`, `utf8_encodeFN`) and the buildAttributes key-injection caveat.
+
+2026-04-25 M3-01 done files=.gitignore,.claude/PROGRESS.md commit=PENDING — baseline psalm-taint run (psalm 6.16.1, 5.53s, 364.6 MB, 80.4% inferred).
+
+## M3-01 baseline triage block
+
+- Run date: 2026-04-25
+- Psalm version: 6.16.1
+- Exit code: 2
+- Total taint findings: **1**
+- Breakdown:
+  - TaintedHtml: 0
+  - TaintedFile: 0
+  - TaintedShell: 0
+  - TaintedSql: 0
+  - TaintedHasQuotes: 0
+  - TaintedInput: 0
+  - TaintedTextWithQuotes: 0
+  - TaintedExtract: 1
+- Environmental noise (UndefinedClass / MissingFile from php-ixr SSH dep): 0
+- Stderr: empty
+
+Representative path:
+- `inc/Logger.php:190` — TaintedExtract on `extract($data)` inside
+  `Logger::formatLogLines()`. Source: `Throwable::getTraceAsString()`
+  → `inc/ErrorHandler.php:138` → `Logger::log` $details param →
+  `$data['details']` (line 134) → `$data` (line 130) →
+  `formatLogLines($data)` (line 150) → `extract($data)` (line 190).
+
+Process note: the M3-01 subagent ran psalm successfully via
+`vendor/bin/psalm --report`, but its sandbox denied Edit/Write/redirect
+operations under `.claude/`. The orchestrator finished the bookkeeping
+(this block, gitignore additions). Future triage subagents will need
+the `.claude/` write permission relaxed, or follow the "psalm writes
+report files, orchestrator transcribes" pattern used here.
+
+Baseline artifacts (now in .gitignore):
+- `.claude/psalm-baseline.json` — full taint_trace
+- `.claude/psalm-baseline.txt` — one-line text report
+- `.claude/psalm-baseline.stderr.txt` — empty

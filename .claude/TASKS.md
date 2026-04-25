@@ -77,13 +77,10 @@ fresh triage subagent per iteration with a clean context.
 
 ### Task list
 
-- [pending] M3-01 — Baseline psalm-taint run. Run
-  `vendor/bin/psalm --taint-analysis` from the repo root, capture stdout
-  + stderr, count findings, group by sink scope (html, file, shell,
-  sql, has_quotes), and write a summary into PROGRESS.md. If psalm
-  crashes or refuses to run, log root cause in QUESTIONS.md as
-  blocked. Subagent must NOT add annotations in this task — just
-  observe.
+- [done] M3-01 — Baseline psalm-taint run. **1 taint finding**:
+  TaintedExtract at inc/Logger.php:190. No html/file/shell/sql/etc.
+  findings. Environment is clean (no php-ixr loader noise). Subagent
+  blocked on `.claude/` writes; orchestrator finished bookkeeping.
 - [pending] M3-02 — Triage iteration 1. Read the M3-01 finding list,
   identify obviously-missed sanitizers (functions clearly named
   `*encode*`, `*sanitize*`, `*escape*`, `*clean*`, `*safe*` or wrapping

@@ -103,3 +103,10 @@ _test/.rector-cache/
 
 # Psalm cache
 /.psalm-cache
+
+# Psalm taint analysis artifacts written by triage subagents
+.claude/psalm-baseline*.txt
+.claude/psalm-baseline*.json
+.claude/psalm-baseline*.stderr.txt
+.claude/psalm-iter*.txt
+.claude/psalm-iter*.json
