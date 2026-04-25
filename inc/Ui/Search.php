@@ -22,6 +22,11 @@ class Search extends Ui
      * @param array $pageLookupResults pagename lookup results in the form [pagename => pagetitle]
      * @param array $fullTextResults fulltext search results in the form [pagename => #hits]
      * @param array $highlight array of strings to be highlighted
+     *
+     * @psalm-taint-sink html $pageLookupResults
+     * @psalm-taint-sink html $fullTextResults
+     * @psalm-taint-sink html $highlight
+     * Evidence: all three are stored on the instance and emitted into HTML by show() via getPageLookupHTML/getFulltextResultsHTML.
      */
     public function __construct(array $pageLookupResults, array $fullTextResults, $highlight)
     {
@@ -41,6 +46,9 @@ class Search extends Ui
      * display the search result
      *
      * @return void
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $this->query, $this->pageLookupResults, $this->fullTextResults and $this->highlight.
      */
     public function show()
     {
