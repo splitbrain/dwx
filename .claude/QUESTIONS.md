@@ -30,6 +30,13 @@ a user-controlled key (unusual but possible) will punch through the
 escape. Worth a scan during M3 for callers that build `$params` from
 `$INPUT->*` keys.
 
+### **M2-04** `Clean::strip()` deliberately unannotated
+
+`inc/Utf8/Clean.php:63` strips bytes >=128, leaving only ASCII. ASCII
+still includes `<`, `>`, `"`, `'`, `&`, `..`, `/`, etc., so this is
+not a sanitizer for any narrow scope. Companion to `stripspecials()`
+which IS annotated.
+
 ### **M2-03** `SafeFN::encode()` encodes bytes, does not block path traversal
 
 `inc/SafeFN.class.php:49` produces ASCII output using only

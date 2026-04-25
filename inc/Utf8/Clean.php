@@ -84,6 +84,12 @@ class Clean
      * @param  string $repl Replace special with this string
      * @param  string $additional Additional chars to strip (used in regexp char class)
      * @return string
+     *
+     * @psalm-taint-escape html the special-chars table includes `<`,
+     *     `>`, `"`, `'`, `&`, and `/`, plus control characters. A
+     *     tainted `$repl` would re-introduce taint — every in-tree
+     *     caller passes a static replacement.
+     * @psalm-taint-escape has_quotes
      */
     public static function stripspecials($string, $repl = '', $additional = '')
     {
