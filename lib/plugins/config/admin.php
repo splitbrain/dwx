@@ -71,6 +71,11 @@ class admin_plugin_config extends AdminPlugin
 
     /**
      * output appropriate html
+     *
+     * @psalm-taint-sink html admin plugin html() emits UI: echoes the
+     *     configuration form markup, locale_xhtml output, and per-setting
+     *     [$label, $input] pairs returned by Setting::html() which already
+     *     contain rendered HTML.
      */
     public function html()
     {
@@ -270,6 +275,9 @@ class admin_plugin_config extends AdminPlugin
     /**
      * @param string $id
      * @param string $text
+     *
+     * @psalm-taint-sink html echoes an h1 element with $id and $text inlined
+     *     directly into attribute and text content without escaping.
      */
     protected function printH1($id, $text)
     {
