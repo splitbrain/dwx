@@ -52,6 +52,13 @@ function act_sendheaders($headers)
  *
  * @param array|string $act
  * @return string
+ *
+ * @psalm-taint-escape html output is restricted to `[1-9a-z_]+` (or
+ *     one of a handful of static literals) by the regex below.
+ * @psalm-taint-escape has_quotes
+ * @psalm-taint-escape file
+ * @psalm-taint-escape shell
+ * @psalm-taint-escape sql
  */
 function act_clean($act)
 {
