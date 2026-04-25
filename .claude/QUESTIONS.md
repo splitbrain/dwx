@@ -80,3 +80,52 @@ responsibility upstream of this function.
 safe for `html`, `sql`, `shell`, or `file` sinks (none of those
 characters are control chars). Not a taint sanitizer — no annotation
 added, no further action needed. Logging here so the decision is visible.
+
+---
+
+## MILESTONE 2 REVIEW REQUEST
+
+All seven M2 tasks closed. Eight functions across six files now carry
+narrow `@psalm-taint-escape` docblock entries; six functions were
+reviewed and intentionally left unannotated.
+
+### Decisions that need your sign-off
+
+The six items above (idfilter, buildAttributes-keys, rfc2231_encode,
+Clean::strip, SafeFN::encode, utf8_encodeFN, stripctl) are the calls I
+made unilaterally where the code is genuinely ambiguous. I prefer
+under-escaping per the rules, but several of these would be reasonable
+to annotate if you read them differently:
+
+- **`SafeFN::encode()`** — strongest case for adding `file` if you
+  consider the typical caller pipeline (cleanID -> SafeFN). Say the
+  word and I will add it with a justification note.
+- **`utf8_encodeFN()`** — same situation. If you confirm cleanID is
+  always upstream in the file-sink path, I will annotate.
+- **`idfilter()`** — could split or could blanket-annotate `html` and
+  accept a false-negative for `$ue=false` callers. Recommend a grep
+  in M3 to see if any caller passes `$ue=false` before an HTML sink.
+- **`buildAttributes()` keys** — annotated as html-safe under the
+  assumption keys are static. M3 should grep for callers passing
+  `$INPUT->*` keys into the `$params` array.
+
+### Architectural questions
+
+- **Plugin scope.** All M1/M2 work is inside `inc/`. Plugin code in
+  `lib/plugins/` is out of scope for now. If you want core annotations
+  to also help plugin authors, M6's developer doc should call this out
+  explicitly.
+- **`$INPUT->server` granularity.** The whole class is a source. Some
+  members (e.g. `SCRIPT_NAME`) are typically trusted; others (`HTTP_*`,
+  `QUERY_STRING`) are attacker-controlled. Splitting into trusted and
+  untrusted accessors would require code changes — out of scope. The
+  catch-all source annotation produces noise but is correct.
+- **SQL scope.** Core has no raw-SQL sinks; the sqlite helper plugin
+  uses prepared statements. The `sql` taint scope is reserved but will
+  not see traffic in M3-M5 unless we also pull in the sqlite plugin.
+
+### M3 readiness
+
+Psalm is installed at `vendor/bin/psalm` (standalone phar). M3 tasks
+are scaffolded in TASKS.md ready for the next run. The first task is
+the baseline psalm run — the finding count delta drives the rest.

@@ -67,10 +67,63 @@ normalization/validation) gets no annotation and should be skipped.
 
 ---
 
-## M3 — Triage run (placeholder — populated after M2 review)
+## M3 — Triage run
 
-## M4 — Output sinks (placeholder)
+Run `vendor/bin/psalm --taint-analysis`, triage findings, identify
+sanitizers missed in M2, annotate them, re-run. Iterate up to 3 times.
 
-## M5 — File-I/O sinks (placeholder)
+Each iteration is a separate task so the orchestrator can dispatch a
+fresh triage subagent per iteration with a clean context.
 
-## M6 — Developer docs (placeholder)
+### Task list
+
+- [pending] M3-01 — Baseline psalm-taint run. Run
+  `vendor/bin/psalm --taint-analysis` from the repo root, capture stdout
+  + stderr, count findings, group by sink scope (html, file, shell,
+  sql, has_quotes), and write a summary into PROGRESS.md. If psalm
+  crashes or refuses to run, log root cause in QUESTIONS.md as
+  blocked. Subagent must NOT add annotations in this task — just
+  observe.
+- [pending] M3-02 — Triage iteration 1. Read the M3-01 finding list,
+  identify obviously-missed sanitizers (functions clearly named
+  `*encode*`, `*sanitize*`, `*escape*`, `*clean*`, `*safe*` or wrapping
+  `htmlspecialchars`/`rawurlencode`/`preg_replace` with stripping
+  semantics) and annotate them following the M2 conventions. Up to ~10
+  annotations max in this iteration. Re-run psalm and record the new
+  finding count.
+- [pending] M3-03 — Triage iteration 2. Same instructions as M3-02 but
+  on the residual findings. Stop earlier if findings have converged
+  (delta < 5%). Investigate any reviewer guidance from M2 review (e.g.
+  buildAttributes key callers, idfilter `$ue=false` callers).
+- [pending] M3-04 — Triage iteration 3 (only if needed). Same
+  instructions. After this, the residual finding set is the reportable
+  baseline.
+- [pending] M3-05 — Document residual findings. Categorize remaining
+  psalm-taint findings as (a) real bugs needing app-logic fixes (log
+  to QUESTIONS.md, do NOT fix), (b) annotation gaps to defer to M4/M5
+  (HTML sinks / file-I/O sinks specifically), (c) known false
+  positives. Write the categorized list into PROGRESS.md and adjust
+  the M4/M5 task scaffolds in TASKS.md to incorporate any new sinks
+  discovered.
+
+### M3 general notes for subagents
+
+- Psalm phar lives at `vendor/bin/psalm`. Config is at `psalm.xml`.
+- Run with `--taint-analysis` flag. Pipe stderr separately so config
+  errors are easy to spot.
+- If psalm cannot resolve some classes (the dokudeps/php-ixr SSH issue
+  noted at setup), filter those errors out — they are environmental,
+  not analysis findings.
+- DO NOT annotate functions that are not sanitizers just to silence a
+  finding. That's the over-escape antipattern. When unsure, leave
+  unannotated and add to the M3-05 residual set.
+- Each iteration is one commit per annotation batch (could be multiple
+  if grouping by file makes sense). Keep commits small.
+
+---
+
+## M4 — Output sinks (placeholder — populated after M3 review)
+
+## M5 — File-I/O sinks (placeholder — populated after M3 review)
+
+## M6 — Developer docs (placeholder — populated after M5 review)
