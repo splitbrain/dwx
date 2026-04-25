@@ -20,6 +20,9 @@ class PageRevisions extends Revisions
      * PageRevisions Ui constructor
      *
      * @param string $id id of page
+     *
+     * @psalm-taint-sink html $id
+     * Evidence: $id is stored on the instance and emitted into HTML attributes via show().
      */
     public function __construct($id = null)
     {
@@ -44,6 +47,9 @@ class PageRevisions extends Revisions
      *
      * @author Andreas Gohr <andi@splitbrain.org>
      * @author Ben Coburn <btcoburn@silicodon.net>
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes Form HTML built from $this->id and RevisionInfo getters.
      */
     public function show($first = -1)
     {
