@@ -21,6 +21,9 @@ class MediaRevisions extends Revisions
      * MediaRevisions Ui constructor
      *
      * @param string $id id of media
+     *
+     * @psalm-taint-sink html $id
+     * Evidence: $id is stored on the instance and emitted into HTML attributes via show().
      */
     public function __construct($id)
     {
@@ -46,6 +49,9 @@ class MediaRevisions extends Revisions
      *
      * @author Andreas Gohr <andi@splitbrain.org>
      * @author Ben Coburn <btcoburn@silicodon.net>
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML Form output built from $this->id and RevisionInfo getters.
      */
     public function show($first = -1)
     {
