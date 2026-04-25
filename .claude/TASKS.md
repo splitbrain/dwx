@@ -217,6 +217,73 @@ For each plugin under lib/plugins/:
 
 ---
 
-## M5 — File-I/O sinks (placeholder — populated after M4 inc/ + M4-supp)
+## M5 — File-I/O sinks
+
+Goal: annotate file-system I/O wrappers as `@psalm-taint-sink file`
+(or `shell` for `io_exec`) and the path-builder helpers (wikiFN family)
+as `@psalm-taint-escape file` where they sanitize unconditionally.
+
+Scope:
+- `inc/io.php` (19 io_ functions; ~885 lines).
+- `inc/pageutils.php` path-builders: `wikiFN`, `metaFN`, `mediaFN`,
+  `localeFN`, `resolve_id`, `resolve_pageid`, `resolve_mediaid`.
+  Already annotated for `cleanID` (file escape) — these compose
+  cleanID with a base directory. Check whether they sanitize
+  unconditionally or accept a `$clean=false` bypass; under-annotate
+  the conditional ones (consistent with the M2 `idfilter` decision).
+- Other inc/ file ops: ad-hoc `fopen` / `file_put_contents` /
+  `file_get_contents` outside of `io.php`. Survey by grep.
+- `lib/exe` + `lib/plugins`: typically use the io_ wrappers, but
+  flag any direct file ops that take user input.
+
+### Task list
+
+- [pending] M5-01 — Survey + annotate `inc/io.php`. 19 functions.
+  Most take `$file` (a path) as first arg → `@psalm-taint-sink file`
+  on that param. Special cases:
+    * `io_exec($cmd, ...)` — shell sink, NOT file. Annotate as
+      `@psalm-taint-sink shell` on `$cmd`.
+    * `io_download($url, $file, ...)` — `$url` is an SSRF concern
+      (not in our scope set today; consider scope `ssrf` if psalm
+      supports it, else skip with a note); `$file` is a file sink.
+    * `io_grep($file, $pattern, ...)` — `$file` is file sink;
+      `$pattern` is a regex, not a sink.
+    * `io_readWikiPage` / `io_writeWikiPage` — `$file` is file
+      sink; `$id` is descriptive metadata, not a sink.
+    * `io_mktmpdir()` — no params, no sink, skip.
+  One commit per logical group (or one per function, orchestrator's
+  choice). Lint each file.
+- [pending] M5-02 — Survey + annotate `inc/pageutils.php` path
+  builders. If `wikiFN($raw_id, '', $clean=true)` strictly calls
+  cleanID, mark return as `@psalm-taint-escape file`. If
+  `$clean=false` is a bypass branch, leave UN-ANNOTATED and log to
+  QUESTIONS.md (mirroring the M2-01 idfilter convention).
+- [pending] M5-03 — Grep for ad-hoc file I/O across `inc/`,
+  `lib/exe`, `lib/plugins` (file_put_contents, file_get_contents,
+  fopen, fwrite, unlink, mkdir, rename, copy used outside of io.php
+  wrappers). Annotate any wrapper functions that pass tainted paths
+  through. Skip top-level scripts (psalm builtins handle PHP
+  natives at the immediate callsite).
+- [pending] M5-04 — Re-run `vendor/bin/psalm --taint-analysis`,
+  compute delta vs M4-supp-99 (1 carryover, 0 new). New findings
+  expected here: file path sinks may light up if any input source
+  reaches one without passing cleanID/SafeFN. Triage A/B/C as
+  before. Reports go to /tmp/psalm-m5.{json,txt}.
+- [pending] M5-05 — Triage new findings: real bugs → log to
+  QUESTIONS.md; annotation gaps → fix and re-run; FPs → document.
+  Iterate up to 2 times max.
+
+### Notes for M5 subagents
+
+- `@psalm-taint-sink file` flags any tainted string flowing into
+  the parameter. Combined with the M2 cleanID/SafeFN escapes, this
+  should produce real signal: if an input source reaches a file
+  sink without passing through one of the escapes, it's flagged.
+- DO NOT annotate the underlying `fopen`/`fwrite`/etc. — those are
+  PHP natives that psalm models internally. Annotate only the
+  DokuWiki wrapper functions.
+- Path BUILDERS (wikiFN, metaFN, etc.) are escape candidates; path
+  CONSUMERS (io_readFile, io_saveFile, etc.) are sink candidates.
+  A function can be both if it builds a path and reads/writes it.
 
 ## M6 — Developer docs (placeholder — populated after M5)
