@@ -41,7 +41,13 @@ class admin_plugin_logviewer extends AdminPlugin
         }
     }
 
-    /** @inheritDoc */
+    /**
+     * @inheritDoc
+     *
+     * @psalm-taint-sink html admin plugin html() emits UI: echoes wrapping div,
+     *     locale_xhtml, then delegates to displayTabs() and displayLog()
+     *     which echo the tab/log markup directly.
+     */
     public function html()
     {
         echo '<div id="plugin__logviewer">';
@@ -53,6 +59,10 @@ class admin_plugin_logviewer extends AdminPlugin
 
     /**
      * Show the navigational tabs and date picker
+     *
+     * @psalm-taint-sink html echoes form HTML and the facility tab list; each
+     *     facility name is hsc()'d but the surrounding <ul>/<li>/<a> tags are
+     *     emitted as the sink.
      */
     protected function displayTabs()
     {
@@ -86,6 +96,9 @@ class admin_plugin_logviewer extends AdminPlugin
 
     /**
      * Read and output the logfile contents
+     *
+     * @psalm-taint-sink html echoes the nolog locale or delegates to
+     *     printLogLines() which echoes the log entries.
      */
     protected function displayLog()
     {
@@ -178,6 +191,10 @@ class admin_plugin_logviewer extends AdminPlugin
      * Get an array of log lines and print them using appropriate styles
      *
      * @param array $lines
+     *
+     * @psalm-taint-sink html echoes the <dl>/<dt>/<dd> log markup directly;
+     *     each log field ($dt, $file, $msg, indented details) is hsc()'d but
+     *     the surrounding tags are emitted as the sink.
      */
     protected function printLogLines($lines)
     {
