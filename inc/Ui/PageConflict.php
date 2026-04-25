@@ -19,6 +19,10 @@ class PageConflict extends Ui
      *
      * @param string $text wiki text
      * @param string $summary edit summary
+     *
+     * @psalm-taint-sink html $text
+     * @psalm-taint-sink html $summary
+     * Evidence: both are stored on the instance and emitted via Form hidden fields and PageDiff in show().
      */
     public function __construct($text = '', $summary = '')
     {
@@ -32,6 +36,8 @@ class PageConflict extends Ui
      * @return void
      * @author   Andreas Gohr <andi@splitbrain.org>
      *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $this->text, $this->summary, $INFO, $lang and Form output.
      */
     public function show()
     {
