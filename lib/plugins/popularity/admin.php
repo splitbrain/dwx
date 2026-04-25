@@ -83,6 +83,10 @@ class admin_plugin_popularity extends AdminPlugin
 
     /**
      * Output HTML form
+     *
+     * @psalm-taint-sink html admin plugin html() emits UI: echoes locale_xhtml,
+     *     getLang strings, and the form built by buildForm() (which embeds the
+     *     popularity data string verbatim inside a textarea).
      */
     public function html()
     {
