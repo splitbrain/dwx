@@ -16,6 +16,9 @@ class Backlinks extends Ui
      * @author   Michael Klier <chi@chimeric.de>
      *
      * @author   Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $ID, $lang and ft_backlinks() results.
      */
     public function show()
     {
