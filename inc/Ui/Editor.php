@@ -21,6 +21,9 @@ class Editor extends Ui
      * @author   Andreas Gohr <andi@splitbrain.org>
      *
      * @triggers EDIT_FORM_ADDTEXTAREA
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $TEXT, $SUM, $INPUT, $INFO, $lang and Form output.
      */
     public function show()
     {
@@ -187,6 +190,9 @@ class Editor extends Ui
      * the default action for EDIT_FORM_ADDTEXTAREA
      *
      * @param array{wr: bool, media_manager: bool, target: string, intro_locale: string, form: Form} $data
+     *
+     * @psalm-taint-sink html $data
+     * Evidence: $data['target'] is interpolated into the page via Form HTML; entry point for editor body taint.
      */
     public function addTextarea(&$data)
     {
