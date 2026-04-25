@@ -180,6 +180,57 @@ sinks come online and previously-untraced flows are caught.
 
 ---
 
-## M5 — File-I/O sinks (placeholder — populated after M4)
+## Supplemental scope (added 2026-04-25 per reviewer)
+
+Original M1/M2 scope was inc/ only. Reviewer clarified that all repo
+code except `_test/` and `vendor/` is in scope, including `lib/exe`,
+`lib/tpl/dokuwiki`, and the 16 bundled plugins. psalm.xml now
+includes `lib/tpl/dokuwiki`. The work below is **additive** — M1, M2,
+M3-baseline, and the inc/ portion of M4 stand as already done.
+
+- [pending] M2-supp-01 — Sanitizer scan of `lib/exe/*.php` (entry-point
+  scripts: ajax.php, css.php, fetch.php, indexer.php, js.php,
+  manifest.php, mediamanager.php, opensearch.php, taskrunner.php,
+  xmlrpc.php). Likely few sanitizers; mostly entry-point scaffolding
+  that calls into inc/ code. Survey first, annotate any local
+  sanitizers, escalate the rest.
+- [pending] M2-supp-02 — Sanitizer scan of `lib/tpl/dokuwiki/`. The
+  template has its own `tpl_*` helpers; identify any that strip or
+  encode strings.
+- [pending] M2-supp-03 — Sanitizer scan of bundled plugins. One subagent
+  per plugin or grouped by 3-4 plugins, depending on size. Plugins:
+  acl, authad, authldap, authpdo, authplain, config, extension, info,
+  logviewer, popularity, revert, safefnrecode, styling, testing,
+  usermanager. Plus the standalone base classes
+  `lib/plugins/{action,admin,auth,cli,remote,syntax}.php`. Each plugin
+  task ends with one commit covering that plugin's annotations.
+- [pending] M4-supp-01 — Output-sink scan of `lib/exe/*.php`. Entry
+  points typically end with `header()` + `echo` patterns; mark sinks.
+- [pending] M4-supp-02 — Output-sink scan of `lib/tpl/dokuwiki/`.
+  Templates emit lots of HTML; mark `tpl_*` helpers that echo
+  parameter-derived content as html sinks.
+- [pending] M4-supp-03 — Output-sink scan of bundled plugins (one
+  task per plugin like M2-supp-03). Pay attention to admin-plugin
+  `html()` methods (admin.php base class declares it) and
+  syntax-plugin `render()` methods (syntax.php base class).
+- [pending] M5-supp — File-I/O sinks across `lib/exe`, `lib/tpl/dokuwiki`,
+  bundled plugins. Will be planned in detail when M5 starts.
+
+### Per-plugin sub-task template (use for M2-supp-03 and M4-supp-03)
+
+For each plugin under lib/plugins/:
+1. Subagent reads `<plugin>/*.php`.
+2. Identifies sanitizer functions (encoding/stripping helpers) — these
+   become @psalm-taint-escape candidates.
+3. Identifies emit-vs-build methods (admin plugins have `html()`
+   that echoes; syntax plugins have `render()` that calls
+   `$renderer->doc .= ...`).
+4. Returns JSON with `sanitizers: []`, `emit_methods: []`,
+   `build_methods: []`, `notes`.
+5. Orchestrator commits one annotation batch per plugin.
+
+---
+
+## M5 — File-I/O sinks (placeholder — populated after M4 inc/ + M4-supp)
 
 ## M6 — Developer docs (placeholder — populated after M5)

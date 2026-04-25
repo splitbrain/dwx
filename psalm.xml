@@ -13,6 +13,7 @@
         <directory name="inc" />
         <directory name="lib/plugins" />
         <directory name="lib/exe" />
+        <directory name="lib/tpl/dokuwiki" />
         <ignoreFiles>
             <directory name="vendor" />
             <directory name="_test" />

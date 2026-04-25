@@ -111,10 +111,17 @@ to annotate if you read them differently:
 
 ### Architectural questions
 
-- **Plugin scope.** All M1/M2 work is inside `inc/`. Plugin code in
-  `lib/plugins/` is out of scope for now. If you want core annotations
-  to also help plugin authors, M6's developer doc should call this out
-  explicitly.
+- **Plugin scope.** ~~All M1/M2 work is inside `inc/`. Plugin code in
+  `lib/plugins/` is out of scope for now.~~ **Reviewer correction
+  (2026-04-25):** all repo code except `_test/` is in scope, including
+  `lib/exe`, `lib/tpl/dokuwiki`, and bundled plugins
+  (`lib/plugins/{acl,authad,authldap,authpdo,authplain,config,extension,info,logviewer,popularity,revert,safefnrecode,styling,testing,usermanager}`
+  plus `lib/plugins/{action,admin,auth,cli,remote,syntax}.php` standalone
+  base classes). Supplemental tasks added to TASKS.md (M2-supp, M4-supp,
+  M5-supp). psalm.xml now also includes `lib/tpl/dokuwiki`. M3-01
+  baseline already covered `inc/`, `lib/plugins`, `lib/exe`; the
+  re-baseline after lib/tpl inclusion belongs to the supplemental
+  tasks.
 - **`$INPUT->server` granularity.** The whole class is a source. Some
   members (e.g. `SCRIPT_NAME`) are typically trusted; others (`HTTP_*`,
   `QUERY_STRING`) are attacker-controlled. Splitting into trusted and
