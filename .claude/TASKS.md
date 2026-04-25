@@ -39,7 +39,7 @@ they can be dispatched in parallel.
 
 ---
 
-## M2 — Obvious sanitizers
+## M2 — Obvious sanitizers ✅ complete
 
 Break down by file. Annotate narrow escape scopes only. When in doubt,
 return `status: blocked` with reasoning — do NOT over-escape.
@@ -51,13 +51,13 @@ normalization/validation) gets no annotation and should be skipped.
 
 ### Task list
 
-- [pending] M2-01 — `inc/common.php`: `hsc()` → html, `buildAttributes()` → html, `formText()` → html, `stripctl()` → review (see M2 notes), `idfilter()` → review.
-- [pending] M2-02 — `inc/pageutils.php`: `prettyprint_id()` → html (delegates to hsc), `utf8_encodeFN()` → file. Address `cleanID()` carefully — it's normalization that incidentally makes filesystem-safe names; annotate `file` with a narrow justification or escalate if unsure.
-- [pending] M2-03 — `inc/SafeFN.class.php`: `SafeFN::encode()` → file. Skip `decode()` and `validateSafe()` (not sanitizers).
-- [pending] M2-04 — `inc/Utf8/Clean.php`: `Clean::stripspecials()` and `Clean::strip()` are MEDIUM confidence. Subagent should inspect and either annotate narrowly or escalate. Explicitly skip `deaccent`, `romanize`, `replaceBadBytes`, `isASCII`, `isUtf8` (not sanitizers).
-- [pending] M2-05 — `inc/actions.php`: `act_clean()` normalizes action identifiers (regex-strips to `[1-9a-z_]+`). Annotate `@psalm-taint-escape file` with justification, or escalate if the subagent thinks it isn't used in file-context sinks.
-- [pending] M2-06 — `inc/auth.php`: `auth_nameencode()` percent-encodes a limited range of chars. MEDIUM confidence. Annotate `file` or escalate.
-- [pending] M2-07 — `inc/fetch.functions.php`: `rfc2231_encode()` — email-header encoding. Likely not a scope we care about; escalate with a review request if unsure.
+- [done] M2-01 — `inc/common.php` — commit dff8c7f7. hsc/buildAttributes/formText annotated html+has_quotes; stripctl and idfilter reviewed and skipped (QUESTIONS).
+- [done] M2-02 — `inc/pageutils.php` — commit f057f660. cleanID annotated file; prettyprint_id html+has_quotes; utf8_encodeFN escalated.
+- [done] M2-03 — `inc/SafeFN.class.php` — commit c0a4fd8a. encode skipped (`.` and `/` are plain); decode/validateSafe never in scope.
+- [done] M2-04 — `inc/Utf8/Clean.php` — commit 586f3452. stripspecials annotated html+has_quotes; strip skipped.
+- [done] M2-05 — `inc/actions.php` — commit cd8485c6. act_clean annotated 5-scope.
+- [done] M2-06 — `inc/auth.php` — commit f2ca3d7e. auth_nameencode annotated html+has_quotes+file+shell.
+- [done] M2-07 — `inc/fetch.functions.php` — commit ee76c1f5. rfc2231_encode skipped (escalated).
 
 ### M2 general notes for subagents
 
