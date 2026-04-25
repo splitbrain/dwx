@@ -15,6 +15,9 @@ class Index extends Ui
      * Index Ui constructor
      *
      * @param string $ns namespace
+     *
+     * @psalm-taint-sink html $ns
+     * Evidence: $ns is stored on the instance and consumed by sitemap()/show() which echo HTML.
      */
     public function __construct($ns = '')
     {
@@ -28,6 +31,8 @@ class Index extends Ui
      * @return void
      * @author   Andreas Gohr <andi@splitbrain.org>
      *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $this->ns via sitemap() and locale lookups.
      */
     public function show()
     {
