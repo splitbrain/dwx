@@ -32,6 +32,9 @@ class PageDiff extends Diff
      * PageDiff Ui constructor
      *
      * @param string $id page id
+     *
+     * @psalm-taint-sink html $id
+     * Evidence: $id is stored on the instance and emitted into HTML attributes via show().
      */
     public function __construct($id = null)
     {
@@ -58,6 +61,9 @@ class PageDiff extends Diff
      *
      * @param string $text
      * @return $this
+     *
+     * @psalm-taint-sink html $text
+     * Evidence: $text is stored on RevInfo2 and emitted into the diff HTML by show().
      */
     public function compareWith($text = null)
     {
@@ -178,6 +184,8 @@ class PageDiff extends Diff
      * @return void
      * @author Andreas Gohr <andi@splitbrain.org>
      *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $this->id, $this->text, RevisionInfo data and diff formatter output.
      */
     public function show()
     {
