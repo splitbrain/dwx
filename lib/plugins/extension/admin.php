@@ -90,6 +90,10 @@ class admin_plugin_extension extends AdminPlugin
 
     /**
      * Render HTML output
+     *
+     * @psalm-taint-sink html admin plugin html() emits UI: echoes the menu
+     *     heading and the rendered output of GuiAdmin (which in turn emits
+     *     the extension manager tabs/list markup).
      */
     public function html()
     {
