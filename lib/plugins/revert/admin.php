@@ -48,6 +48,10 @@ class admin_plugin_revert extends AdminPlugin
 
     /**
      * output appropriate html
+     *
+     * @psalm-taint-sink html admin plugin html() emits UI: echoes locale_xhtml
+     *     output and delegates to printSearchForm/listEdits/revertEdits which
+     *     all echo HTML directly.
      */
     public function html()
     {
@@ -66,6 +70,9 @@ class admin_plugin_revert extends AdminPlugin
 
     /**
      * Display the form for searching spam pages
+     *
+     * @psalm-taint-sink html echoes the form markup directly; $INPUT->str('filter')
+     *     is wrapped in hsc() but the surrounding string concatenation is the sink.
      */
     protected function printSearchForm()
     {
@@ -80,6 +87,9 @@ class admin_plugin_revert extends AdminPlugin
 
     /**
      * Start the reversion process
+     *
+     * @psalm-taint-sink html echoes HTML markup with $filter values inlined into
+     *     the page (page IDs from $revert flow into printf format strings).
      */
     protected function revertEdits($revert, $filter)
     {
@@ -118,6 +128,9 @@ class admin_plugin_revert extends AdminPlugin
 
     /**
      * List recent edits matching the given filter
+     *
+     * @psalm-taint-sink html echoes HTML markup directly; $filter is hsc()'d but
+     *     the function still emits the surrounding tags as a sink.
      */
     protected function listEdits($filter)
     {
