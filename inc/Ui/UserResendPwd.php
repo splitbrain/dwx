@@ -18,6 +18,9 @@ class UserResendPwd extends Ui
      * @author   Andreas Gohr <andi@splitbrain.org>
      *
      * @author   Benoit Chesneau <benoit@bchesneau.info>
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $INPUT pwauth token and Form output.
      */
     public function show()
     {
