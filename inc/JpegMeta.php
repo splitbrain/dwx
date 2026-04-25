@@ -54,7 +54,8 @@ class JpegMeta {
      *
      * @author Sebastian Delmont <sdelmont@zonageek.com>
      *
-     * @param $fileName
+     * @param string $fileName
+     * @psalm-taint-sink file $fileName
      */
     function __construct($fileName) {
 
@@ -947,6 +948,7 @@ class JpegMeta {
      * @author Andreas Gohr <andi@splitbrain.org>
      *
      * @param string $fileName file name or empty string for a random name
+     * @psalm-taint-sink file $fileName
      * @return bool
      */
     function save($fileName = "") {
