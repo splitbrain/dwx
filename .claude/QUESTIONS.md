@@ -30,6 +30,19 @@ a user-controlled key (unusual but possible) will punch through the
 escape. Worth a scan during M3 for callers that build `$params` from
 `$INPUT->*` keys.
 
+### **M2-07** `rfc2231_encode()` is a header builder, not a taint sanitizer
+
+`inc/fetch.functions.php:121` produces a Content-Disposition-style
+fragment `name=value` or `name*=charset'lang'value`. The `$name`
+parameter is raw-concatenated (no encoding at all), and the `$value`
+parameter takes a no-encoding fast path when it does not contain any
+of the regex's special characters. Because the regex omits `&`, an
+`&` in `$value` passes through unencoded into the `name="value"`
+form, breaking an html escape claim. The function is intended as a
+header sink helper — escape semantics differ between the two return
+branches, so I left it unannotated. Recommend treating its caller
+sites as direct header sinks during M5 instead.
+
 ### **M2-04** `Clean::strip()` deliberately unannotated
 
 `inc/Utf8/Clean.php:63` strips bytes >=128, leaving only ASCII. ASCII
