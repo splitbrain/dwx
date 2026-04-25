@@ -523,6 +523,10 @@ class auth_plugin_authldap extends AuthPlugin
      * @param string $string
      * @return string
      * @author Andreas Gohr
+     *
+     * @psalm-taint-escape ldap percent-encodes the LDAP filter metacharacters
+     *     (\x00-\x1F, *, (, ), \\) into the standard \xx hex escape; output
+     *     is safe to embed in an RFC 4515 filter expression.
      */
     protected function filterEscape($string)
     {
