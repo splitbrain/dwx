@@ -406,6 +406,8 @@ function media_upload($ns, $auth, $file = false)
  * @param string $from
  * @param string $to
  * @return bool
+ * @psalm-taint-sink file $from
+ * @psalm-taint-sink file $to
  */
 function copy_uploaded_file($from, $to)
 {
@@ -644,6 +646,7 @@ function media_saveOldRevision($id)
  * @param string $file path to file
  * @param string $mime mimetype
  * @return int
+ * @psalm-taint-sink file $file
  */
 function media_contentcheck($file, $mime)
 {
@@ -1927,6 +1930,7 @@ function media_get_from_URL($url, $ext, $cache)
  * @param string $url
  * @param string $file path to file in which to put the downloaded content
  * @return bool
+ * @psalm-taint-sink file $file
  */
 function media_image_download($url, $file)
 {
