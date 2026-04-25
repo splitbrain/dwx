@@ -19,6 +19,8 @@ class UserProfile extends Ui
      * @return void
      * @author   Andreas Gohr <andi@splitbrain.org>
      *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $_SERVER, $INPUT, $INFO and Form output.
      */
     public function show()
     {
