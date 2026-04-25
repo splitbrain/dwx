@@ -17,6 +17,8 @@ class Subscribe extends Ui
      * @return void
      * @author Adrian Lang <lang@cosmocode.de>
      *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from $INFO, $INPUT, $ID, $lang and Form output.
      */
     public function show()
     {
