@@ -44,6 +44,10 @@ class admin_plugin_styling extends AdminPlugin
 
     /**
      * Render HTML output, e.g. helpful text and a form
+     *
+     * @psalm-taint-sink html admin plugin html() emits UI: echoes div markup
+     *     and getLang strings, and delegates to form() which echoes the
+     *     editor form directly.
      */
     public function html()
     {
@@ -58,6 +62,10 @@ class admin_plugin_styling extends AdminPlugin
 
     /**
      * Create the actual editing form
+     *
+     * @psalm-taint-sink html echoes the form markup directly; replacement keys
+     *     and values from style.ini are interpolated through hsc() but the
+     *     surrounding tags are emitted as the sink.
      */
     public function form()
     {
