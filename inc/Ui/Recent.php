@@ -22,6 +22,9 @@ class Recent extends Ui
      *
      * @param int $first skip the first n changelog lines
      * @param string $show_changes type of changes to show; 'pages', 'mediafiles', or 'both'
+     *
+     * @psalm-taint-sink html $show_changes
+     * Evidence: $show_changes is stored on the instance and emitted as the active dropdown value in show()'s Form HTML.
      */
     public function __construct($first = 0, $show_changes = 'both')
     {
@@ -39,6 +42,9 @@ class Recent extends Ui
      * @author Satoshi Sahara <sahara.satoshi@gmail.com>
      *
      * @author Andreas Gohr <andi@splitbrain.org>
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes Form HTML built from $this->show_changes, $ID, $lang and RevisionInfo getters.
      */
     public function show()
     {
