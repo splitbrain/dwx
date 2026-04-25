@@ -19,6 +19,8 @@ class PageDraft extends Ui
      * @return void
      * @author   Andreas Gohr <andi@splitbrain.org>
      *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from Draft text, $INFO, $lang and Form output.
      */
     public function show()
     {
