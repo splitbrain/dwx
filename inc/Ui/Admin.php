@@ -26,6 +26,9 @@ class Admin extends Ui
      * Display the UI element
      *
      * @return void
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from plugin metadata, locale lookups and globals.
      */
     public function show()
     {
