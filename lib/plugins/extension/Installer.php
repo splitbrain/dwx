@@ -144,6 +144,7 @@ class Installer
      * @param string $archive the path to the archive
      * @param string $base the base directory name to use
      * @throws Exception
+     * @psalm-taint-sink file $archive
      */
     public function installFromArchive($archive, $base = null)
     {
