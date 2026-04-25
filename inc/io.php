@@ -24,6 +24,8 @@ use dokuwiki\Extension\Event;
  * @param string $basedir - the config name of the type to delete (datadir or mediadir usally)
  * @return bool - true if at least one namespace was deleted
  *
+ * @psalm-taint-sink file $id
+ *
  * @author  Andreas Gohr <andi@splitbrain.org>
  * @author Ben Coburn <btcoburn@silicodon.net>
  */
@@ -71,6 +73,8 @@ function io_sweepNS($id, $basedir = 'datadir')
  * @param bool|int|string $rev revision timestamp
  * @return string
  *
+ * @psalm-taint-sink file $file
+ *
  * @author Ben Coburn <btcoburn@silicodon.net>
  */
 function io_readWikiPage($file, $id, $rev = false)
@@ -111,6 +115,8 @@ function _io_readWikiPage_action($data)
  * @param string $file filename
  * @param bool $clean
  * @return string|bool the file contents or false on error
+ *
+ * @psalm-taint-sink file $file
  *
  * @author  Andreas Gohr <andi@splitbrain.org>
  */
@@ -254,6 +260,8 @@ function bzfile($file, $array = false)
  * @param int|bool|string $rev timestamp of revision
  * @return bool
  *
+ * @psalm-taint-sink file $file
+ *
  * @author Ben Coburn <btcoburn@silicodon.net>
  */
 function io_writeWikiPage($file, $content, $id, $rev = false)
@@ -350,6 +358,8 @@ function _io_saveFile($file, $content, $append)
  * @param bool $append
  * @return bool true on success, otherwise false
  *
+ * @psalm-taint-sink file $file
+ *
  * @author  Andreas Gohr <andi@splitbrain.org>
  */
 function io_saveFile($file, $content, $append = false)
@@ -386,6 +396,8 @@ function io_saveFile($file, $content, $append = false)
  * @param bool $regex use regexp?
  * @param int $maxlines number of occurrences of the line to replace
  * @return bool true on success
+ *
+ * @psalm-taint-sink file $file
  *
  * @author Steven Danz <steven-danz@kc.rr.com>
  * @author Christopher Smith <chris@jalakai.co.uk>
@@ -462,6 +474,8 @@ function io_replaceInFile($file, $oldline, $newline, $regex = false, $maxlines =
  * @param bool $regex use regexp?
  * @return bool true on success
  *
+ * @psalm-taint-sink file $file
+ *
  * @author Patrick Brown <ptbrown@whoopdedo.org>
  */
 function io_deleteFromFile($file, $badline, $regex = false)
@@ -479,6 +493,8 @@ function io_deleteFromFile($file, $badline, $regex = false)
  * the lock is assumed to be stale and the function goes on
  *
  * @param string $file filename
+ *
+ * @psalm-taint-sink file $file
  *
  * @author Andreas Gohr <andi@splitbrain.org>
  */
@@ -509,6 +525,8 @@ function io_lock($file)
  *
  * @param string $file filename
  *
+ * @psalm-taint-sink file $file
+ *
  * @author Andreas Gohr <andi@splitbrain.org>
  */
 function io_unlock($file)
@@ -530,6 +548,8 @@ function io_unlock($file)
  *
  * @param string $id page id
  * @param string $ns_type 'pages' or 'media'
+ *
+ * @psalm-taint-sink file $id
  *
  * @author Ben Coburn <btcoburn@silicodon.net>
  */
@@ -570,6 +590,8 @@ function io_createNamespace($id, $ns_type = 'pages')
  *
  * @param string $file file name
  *
+ * @psalm-taint-sink file $file
+ *
  * @author  Andreas Gohr <andi@splitbrain.org>
  */
 function io_makeFileDir($file)
@@ -587,6 +609,8 @@ function io_makeFileDir($file)
  *
  * @param string $target filename
  * @return bool
+ *
+ * @psalm-taint-sink file $target
  *
  * @link    http://php.net/manual/en/function.mkdir.php
  * @author  <saint@corenova.com>
@@ -614,6 +638,8 @@ function io_mkdir_p($target)
  * @param string $path
  * @param bool $removefiles defaults to false which will delete empty directories only
  * @return bool
+ *
+ * @psalm-taint-sink file $path
  *
  * @author Andreas Gohr <andi@splitbrain.org>
  */
@@ -698,6 +724,9 @@ function io_mktmpdir()
  * @param int $maxSize maximum file size
  * @return bool|string          if failed false, otherwise true or the name of the file in the given dir
  *
+ * @psalm-taint-sink ssrf $url
+ * @psalm-taint-sink file $file
+ *
  * @author Andreas Gohr <andi@splitbrain.org>
  * @author Chris Smith <chris@jalakai.co.uk>
  */
@@ -754,6 +783,9 @@ function io_download($url, $file, $useAttachment = false, $defaultName = '', $ma
  * @param string $from
  * @param string $to
  * @return bool succes or fail
+ *
+ * @psalm-taint-sink file $from
+ * @psalm-taint-sink file $to
  */
 function io_rename($from, $to)
 {
@@ -779,6 +811,8 @@ function io_rename($from, $to)
  * @param string $input input pipe
  * @param string $output output pipe
  * @return int exit code from process
+ *
+ * @psalm-taint-sink shell $cmd
  *
  * @author Tom N Harris <tnharris@whoopdedo.org>
  */
@@ -811,6 +845,8 @@ function io_exec($cmd, $input, &$output)
  * @param int $max How many lines to return (0 for all)
  * @param bool $backref When true returns array with backreferences instead of lines
  * @return array matching lines or backref, false on error
+ *
+ * @psalm-taint-sink file $file
  *
  * @author Andreas Gohr <andi@splitbrain.org>
  */
@@ -849,6 +885,8 @@ function io_grep($file, $pattern, $max = 0, $backref = false)
  *
  * @param string $file filename path to file
  * @return int size of file
+ *
+ * @psalm-taint-sink file $file
  *
  * @author  Gerrit Uitslag <klapinklapin@gmail.com>
  */
