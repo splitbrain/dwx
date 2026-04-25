@@ -79,6 +79,7 @@ class Mailer
      * @param string $mime  Mimetype of the attached file
      * @param string $name The filename to use
      * @param string $embed Unique key to reference this file from the HTML part
+     * @psalm-taint-sink file $path
      */
     public function attachFile($path, $mime, $name = '', $embed = '')
     {
