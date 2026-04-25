@@ -9,7 +9,12 @@ use dokuwiki\Utf8\PhpString;
  */
 class DisplayRow extends DisplayTile
 {
-    /** @inheritDoc */
+    /**
+     * @inheritDoc
+     *
+     * @psalm-taint-sink html
+     * Evidence: echoes HTML built from MediaFile id/metadata, $lang and DOKU_BASE constants.
+     */
     public function show()
     {
         global $lang;
