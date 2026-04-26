@@ -254,3 +254,120 @@ Three call sites flagged during the scan as worth a closer look but **not** anno
 - `inc/auth.php:1242` — `$tfile` path is built from a token but the token is `preg_replace`'d to hex-only before path use. Same pattern in `inc/Action/Resendpwd.php`. Safe today; if the regex ever loosens, the path becomes a sink.
 - `inc/media.php:316` — `media_upload_xhr` reads `php://input` then writes to a tmp path `md5($id)`. ID flows from `$INPUT->get->str('qqfile')` and is hashed before path use. Safe by hash, but worth a future audit if the hash step ever changes.
 - `lib/plugins/extension/Installer.php:132` — `installFromUpload` moves `$_FILES tmp_name` to `$tmp/$tmpbase.archive` where `$tmpbase` comes from `fileToBase($_FILES[$field]['name'])`. The wrapper `installFromArchive` is annotated; the upload-name flow into `fileToBase` could use a sanitizer audit (does `fileToBase` strip path separators? does it block `.`-prefixed names?).
+
+---
+
+## MILESTONE 5 FOLLOW-UP AUDITS
+
+After M5-04, the orchestrator ran four targeted caller-grep audits to follow through on the latent concerns logged above and from M2/M3. Resolutions below; one new finding surfaced.
+
+### **M2-01** `idfilter($id, $ue=false)` — RESOLVED
+
+Audit found exactly two non-test callers in core that pass `$ue=false`:
+
+- `inc/html.php:212` (`html_btn`) — result is concatenated into a `<form action="$script">` attribute; the input is the global `$ID`/page-id which is already `cleanID`-sanitized upstream. The only characters `idfilter($id,false)` introduces are the colon→slash/semicolon `strtr` — neither is an HTML metacharacter.
+- `inc/media.php:1746` — value passed to `media_managerURL()` → `wl()` URL-builder, which re-encodes. Flow dies at a non-HTML sink.
+
+Verdict: zero risky-html-flow callers. Concern closed. No annotation change needed.
+
+### **M2-01** `buildAttributes()` keys — RESOLVED
+
+~50 call sites across `inc/` and bundled plugins surveyed. The dominant pattern is a freshly-built array literal with hardcoded keys directly above the `buildAttributes()` call. Four superficially-dynamic groups traced one frame up:
+
+- `inc/template.php:433` (`_tpl_metaheaders_action`) — keys come from `TPL_METAHEADER_OUTPUT` event subscribers. Plugin-author trust boundary, not request taint.
+- `inc/template.php:1243` (`_tpl_img_action`) — `$data['params']` originates with literal keys (`width`/`height`/`class`/`alt`/`title`/`src`); `TPL_IMG_DISPLAY` event likewise plugin-author surface.
+- `inc/parser/xhtml.php:1939`/`:2011` (`_video`/`_audio`) — `$atts` built one frame up at `xhtml.php:1744` with literal keys.
+- `inc/Form/*` and `inc/form.php` element helpers — `Element::attr($name, ...)`'s `$name` is a hardcoded string at every observed call site.
+
+Verdict: zero `$INPUT`-to-key flows in core. Concern closed. The function's docblock correctly delegates key-control to the caller as a contract.
+
+### **M2-07** `rfc2231_encode($name, $value)` — RESOLVED
+
+Two callers in core, both at `inc/fetch.functions.php:82` and `:87` inside `sendFile()`:
+
+- Both pass the **literal string** `'filename'` as `$name`. Header-injection via `$name` is structurally impossible.
+- Both pass `PhpString::basename($orig)` as `$value`, where `$orig` traces to a media file path resolved from a `cleanID`-sanitized media ID.
+
+Correction to the original concern: the regex `\x00-\x20` **does** cover `\r` (0x0D) and `\n` (0x0A). The original claim that the regex "omits CR/LF" was wrong; CR/LF are encoded into the rfc2231 form, so header injection via `$value` is not reachable even if a `FETCH_MEDIA_STATUS` plugin tampered with `$orig`.
+
+Verdict: zero risky-user-input callers. Concern closed.
+
+### **M5-02** `wikiFN`/`mediaFN`/`resolve_id` `$clean=false` callers — RESOLVED
+
+- **Direct `$clean=false` callers**: zero non-test callers for `wikiFN`, `mediaFN`, or `resolve_id`. (Side note: `resolve_id` has **zero live callers anywhere** in the project — candidate for removal in a future cleanup branch.)
+- **Indirect via wrappers**: `page_exists($id, $rev, $clean)` and `media_exists($id, $rev, $clean)` forward `$clean` directly into `wikiFN`/`mediaFN` in one hop.
+- **Eight in-tree call sites pass `false` to those wrappers**: 7 to `page_exists` (`inc/fulltext.php:159`, `:197`, `:231`; `inc/parser/xhtml.php:906`; `inc/Cache/CacheRenderer.php:50`; `inc/Search/Indexer.php:641`; `inc/pageutils.php:627`) and 1 to `media_exists` (`inc/pageutils.php:596`).
+
+Every one of the eight is `safe-pre-cleaned`: the ID arg has either (a) been written by the resolver chain (`PageResolver::resolveId` / `MediaResolver::resolveId`, both terminating with `cleanID()`), or (b) come from an internal datastore (search index, metadata `references` map) whose entries are only written by code paths that already `cleanID`'d the value.
+
+Verdict: zero risky-raw-id callers. The trust chain holds. The existing `@psalm-taint-escape` annotations on `resolve_pageid`/`resolve_mediaid` correctly model the resolver guarantee. No annotation change needed.
+
+### **M5-02** `localeFN($id, $ext='txt')` callers — RESOLVED
+
+Two direct callers, both wrappers:
+
+- `p_locale_xhtml()` (`inc/parserutils.php:129`) — 22 transitive callers, all static literals (`'denied'`, `'norev'`, `'login'`, `'admin'`, etc.). The single nominally-dynamic case (`inc/Ui/Editor.php:160` `$data['intro_locale']`) gets values from an internal switch over `'edit'`/`'editrev'`/`'read'` literals, exposed through `EDIT_FORM_ADDTEXTAREA` event for plugin tampering.
+- `rawLocale()` (`inc/common.php:1024`) — 5 callers; all static literals (`'mailwrap'`, `'password'`, `'pwconfirm'`, plus `SubscriptionSender::send`'s `$template` which is itself one of 4 hardcoded literals).
+
+`$ext` is only ever `'txt'` (default) or `'html'` (`Mailer.class.php:217`). Plugin-event mutation is plugin-trust-API scope, not request taint.
+
+Verdict: zero risky-user-input callers. Concern closed.
+
+### **M5-03** Installer upload-name flow — RESOLVED
+
+`fileToBase($name)` at `lib/plugins/extension/Installer.php:431`:
+
+1. `PhpString::basename()` strips path separators.
+2. `preg_replace` strips known archive-extension suffixes (`tar.gz`, `zip`, `archive`, etc.).
+3. `preg_replace('/\W+/', '', $base)` — **whitelist** filter, only `[A-Za-z0-9_]` survives.
+4. Falls back to the literal `'upload'` if the result is empty.
+
+No passthrough branches. Concatenated with a server-generated `io_mktmpdir()` directory and a fixed `'.archive'` suffix before reaching `move_uploaded_file`/`installFromArchive`. Verdict: **verified-safe** for the upload-name flow specifically.
+
+Archive extraction (Tar/Zip via `splitbrain/php-archive`): `FileInfo::cleanPath()` (`vendor/splitbrain/php-archive/src/FileInfo.php:281-297`) converts backslashes, drops empty/`.` segments, pops on `..`, trims leading slashes. Classic Zip Slip on entry names is **mitigated**.
+
+Authn/authz: admin-only via `AdminPlugin::forAdminOnly()`; `checkSecurityToken()` enforced at `lib/plugins/extension/admin.php:37`.
+
+### **M5-03** Installer plugin.info.txt `base` path traversal — **NEW FINDING**
+
+The upload-name and zip-extraction audits both came back clean, but the audit surfaced a separate write-path-traversal in the install step that was not in the original concern list:
+
+- `lib/plugins/extension/Extension.php:129-133` — `Extension::initFromDirectory` reads `$localInfo['base']` from a parsed `plugin.info.txt` **with no sanitization**.
+- `lib/plugins/extension/Extension.php:230-239` — `getInstallDir()` returns `fullpath(DOKU_PLUGIN . $this->base)`. `fullpath()` resolves `..` segments, so `base = "../../somewhere"` normalises to a path **outside** `DOKU_PLUGIN`.
+- `lib/plugins/extension/Installer.php:178-181` — `dircopy` writes the extracted plugin tree to `getInstallDir()`.
+
+**Attack scenario.** An admin uploads or installs (via the extension manager URL) a third-party plugin archive whose `plugin.info.txt` declares `base = ../../some/path`. After extraction, `dircopy` lands the files at the resolved location — anywhere the web user can write within `DOKU_INC` (`conf/`, `data/`, `lib/tpl/`, etc.). Combined with the ability to write `.php` files, this is RCE for an attacker who controls the published plugin contents.
+
+**Mitigations in place.** Admin auth + CSRF token are required to reach `installFromArchive`. The standard threat model says "an admin could already write files anywhere via FTP" — but on hosted DokuWiki installations where the admin role does **not** imply filesystem access (e.g. SaaS, multi-tenant), this represents a real escalation: a malicious plugin author can place files outside `DOKU_PLUGIN` without filesystem credentials.
+
+**Recommendation.** `Extension::initFromDirectory` should either (a) validate that `$localInfo['base']` matches `^[A-Za-z0-9_-]+$`, or (b) `getInstallDir()` should re-assert `str_starts_with($resolved, DOKU_PLUGIN . DIRECTORY_SEPARATOR)` after `fullpath()` and bail otherwise. Either is a tight fix.
+
+This is **out of scope** for the taint-annotation branch (it's a code change, not an annotation change), but worth a separate issue/PR. Logging here so it isn't lost.
+
+### **M3-02** Logger `formatLogLines` TaintedExtract — RESOLVED on stronger grounds
+
+The original disposition ("log file is trusted") was right for the wrong reason. Re-audit found:
+
+- `formatLogLines` is the **writer-side formatter**, not a reader. It is called synchronously from `Logger::log` lines 144/150 with the in-memory `$data` array constructed at lines 130-139.
+- The `$data` keys are **eight hardcoded string literals**: `facility`, `datetime`, `message`, `details`, `file`, `line`, `loglines`, `logfile`. Built one stack frame up; never round-trips through the filesystem.
+- `extract($data)` with default `EXTR_OVERWRITE` therefore introduces only those eight variable names. Attacker key control is structurally impossible regardless of how tainted the values are.
+- Post-extract sinks: `json_encode` + tab/newline string concat into a log line, `date('Y-m-d H:i:s', $datetime)` (static format), `io_saveFile` to a path derived from `$conf['logdir']` independently of any extracted variable. No `eval`, callable, `unserialize`, SQL, shell, or dynamic path concatenation.
+- Attacker-controllable values (`$message`/`$details` — User-Agent, URL, etc.) are at most a log-injection / newline-forgery concern, unrelated to `extract()`.
+
+Verdict: **true FP**. Suggested follow-up: add a targeted `@psalm-suppress TaintedExtract` at `inc/Logger.php:190` with a comment pointing to the static-key construction at lines 130-139, so a future reader sees the structural argument inline. Not applied in this branch — keeping the documentation-only disposition consistent with the M3-02 decision; flagging here for the reviewer to choose.
+
+### Summary of follow-up audits
+
+Of seven concerns flagged in QUESTIONS.md before the audit pass:
+
+| Concern | Outcome |
+|---|---|
+| M2-01 idfilter $ue=false | resolved-safe |
+| M2-01 buildAttributes keys | resolved-safe |
+| M2-07 rfc2231_encode | resolved-safe (original concern based on a misreading of the regex) |
+| M5-02 wikiFN/mediaFN/resolve_id $clean=false | resolved-safe (resolve_id has no live callers — unrelated cleanup opportunity) |
+| M5-02 localeFN | resolved-safe |
+| M5-03 Installer upload-name + zip extraction | resolved-safe (whitelist filter + cleanPath normaliser) |
+| M3-02 Logger TaintedExtract | confirmed FP on stronger structural grounds |
+
+One new concrete finding surfaced: **plugin.info.txt `base` path traversal** at install time (admin+CSRF-gated, but escalates capability beyond what an admin already has on hosted/multi-tenant deployments). Recommended fix described above.
