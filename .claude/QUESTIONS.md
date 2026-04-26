@@ -228,3 +228,29 @@ Logger TaintedExtract FP. Zero new findings, zero resolved.
   unescaped. Current callers all pass literals; if a future caller
   passes user input through, the sink annotation will fire. Worth a
   comment in the function body, but not in scope for this branch.
+
+---
+
+### **M5-02** wikiFN/mediaFN/resolve_id are conditional sanitizers
+
+Three path-builder functions in `inc/pageutils.php` accept a `$clean = true` bypass parameter:
+
+- `wikiFN($raw_id, $rev = '', $clean = true)` (line 336) — `if ($clean) $id = cleanID($id);`
+- `mediaFN($id, $rev = '', $clean = true)` (line 461) — `if ($clean) $id = cleanID($id);`
+- `resolve_id($ns, $id, $clean = true)` (line 515, deprecated) — `if ($clean) $id = cleanID($id);`
+
+When the caller passes `$clean = false`, the input is concatenated into a filesystem path with no in-function sanitization. Same shape as the M2-01 `idfilter()` decision: Psalm escape annotations apply unconditionally, so a blanket `@psalm-taint-escape file` would produce a false negative for `$clean = false` callers.
+
+Known call sites in core that pass `false` exist: `page_exists()`, `media_exists()` (this file), `resolve_pageid`/`resolve_mediaid` (which then re-feed into wikiFN/mediaFN). Those callers do their own pre-clean via `cleanID()` or via `MediaResolver`/`PageResolver` (which themselves call `cleanID`), so the trace from a real user-input source through `$clean=false` would have to bypass that pre-clean — possible but path-dependent.
+
+Options: (a) leave unannotated (current); (b) annotate `file` on all three and accept FNs for `$clean=false` callers that don't pre-clean; (c) split each function into a `*_clean` and `*_raw` pair (invasive). Recommend (a) plus an audit of every `$clean=false` call site to confirm pre-cleaning.
+
+Follow-up: `localeFN($id, $ext='txt')` at line 486 has *no* sanitization at all; it relies entirely on caller obligation (core callers pass static literals like `'editrev'`, `'denied'`). Not annotated — flagged here for visibility, not for action.
+
+### **M5-03** Audit suggestions from ad-hoc file-I/O scan (informational)
+
+Three call sites flagged during the scan as worth a closer look but **not** annotated; all currently safe-by-construction:
+
+- `inc/auth.php:1242` — `$tfile` path is built from a token but the token is `preg_replace`'d to hex-only before path use. Same pattern in `inc/Action/Resendpwd.php`. Safe today; if the regex ever loosens, the path becomes a sink.
+- `inc/media.php:316` — `media_upload_xhr` reads `php://input` then writes to a tmp path `md5($id)`. ID flows from `$INPUT->get->str('qqfile')` and is hashed before path use. Safe by hash, but worth a future audit if the hash step ever changes.
+- `lib/plugins/extension/Installer.php:132` — `installFromUpload` moves `$_FILES tmp_name` to `$tmp/$tmpbase.archive` where `$tmpbase` comes from `fileToBase($_FILES[$field]['name'])`. The wrapper `installFromArchive` is annotated; the upload-name flow into `fileToBase` could use a sanitizer audit (does `fileToBase` strip path separators? does it block `.`-prefixed names?).
