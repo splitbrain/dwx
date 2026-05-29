@@ -105,9 +105,15 @@ function http_sendfile($file)
  *
  *       location /data/media/ { internal; alias /srv/dokuwiki-media/; }
  *
- * Per DokuWiki's conventions every served file lives either inside the
- * DokuWiki directory or in one of the configured data directories, so one of
- * these two cases always applies.
+ * - Any other file (e.g. a plugin serving a download from an arbitrary
+ *   location) is emitted as its absolute path behind the `_x_accel_redirect/`
+ *   prefix. This is an opt-in escape hatch: it only resolves if the admin adds
+ *   an internal location aliased to the file system root, otherwise nginx
+ *   returns 404. See the fallback below for the required configuration.
+ *
+ * Per DokuWiki's conventions almost every served file lives inside the
+ * DokuWiki directory or in a configured data directory, so the first two cases
+ * cover all of core; the third is only relevant for unusual plugins.
  *
  * @param string $file absolute path of the file to send
  * @return string the relative URL for the X-Accel-Redirect header
@@ -155,8 +161,16 @@ function http_xaccel_url($file)
         }
     }
 
-    // unreachable for conventional setups; keep the legacy fallback
-    return DOKU_REL . http_xaccel_encode(substr($file, strlen($inc) + 1));
+    // The file lives somewhere outside DokuWiki and its data directories, e.g.
+    // a plugin serving a download from an arbitrary location. We cannot derive
+    // a logical URL, so we emit the absolute path behind a dedicated prefix.
+    // This only resolves if the admin opts in by adding an internal location
+    // aliased to the file system root, otherwise nginx safely returns 404:
+    //
+    //     location DOKU_REL_x_accel_redirect/ { internal; alias /; }
+    //
+    // (with DOKU_REL being the base path of the DokuWiki installation)
+    return DOKU_REL . '_x_accel_redirect/' . http_xaccel_encode(ltrim($file, '/'));
 }
 
 /**

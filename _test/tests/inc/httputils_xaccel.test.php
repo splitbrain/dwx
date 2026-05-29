@@ -81,6 +81,20 @@ class httputils_xaccel_test extends DokuWikiTest
     }
 
     /**
+     * A file outside DokuWiki and all data directories (e.g. served by a
+     * plugin from an arbitrary location) is emitted as its absolute path
+     * behind the dedicated opt-in prefix.
+     */
+    public function test_arbitrary_file_uses_escape_hatch()
+    {
+        $file = '/opt/secret-downloads/report.pdf';
+        $this->assertEquals(
+            DOKU_REL . '_x_accel_redirect/opt/secret-downloads/report.pdf',
+            http_xaccel_url($file)
+        );
+    }
+
+    /**
      * File names with spaces or other special characters must be URL-encoded,
      * because nginx URL-decodes the X-Accel-Redirect target.
      */
