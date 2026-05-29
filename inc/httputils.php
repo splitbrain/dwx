@@ -78,12 +78,100 @@ function http_sendfile($file)
         ob_end_clean();
         exit;
     } elseif ($conf['xsendfile'] == 3) {
-        // FS#2388 nginx just needs the relative path.
-        $file = DOKU_REL . substr($file, strlen(fullpath(DOKU_INC)) + 1);
-        header("X-Accel-Redirect: $file");
+        // FS#2388, #2895 nginx needs an internal redirect URL, not a file path.
+        header("X-Accel-Redirect: " . http_xaccel_url($file));
         ob_end_clean();
         exit;
     }
+}
+
+/**
+ * Build the internal redirect URL for nginx's X-Accel-Redirect header
+ *
+ * Unlike Apache's mod_xsendfile or lighttpd, nginx does not accept a file
+ * system path. It expects a URL which it maps back to a file through an
+ * `internal` location. We therefore translate the absolute file path into the
+ * URL the file would have in a default installation, so the result stays
+ * predictable regardless of where the data directories actually live:
+ *
+ * - Files inside the DokuWiki directory (the default layout, lib/ files and
+ *   data directories that have not been moved out) keep their path relative to
+ *   the DokuWiki root. This matches the historic behaviour, so existing setups
+ *   keep working without configuration changes.
+ * - Files in a relocated data directory are mapped to the location that
+ *   directory would have by default (below `data/`). Admins who move a data
+ *   directory out of the DokuWiki root must add a matching `internal` location
+ *   (with `alias`) to their nginx configuration, e.g.:
+ *
+ *       location /data/media/ { internal; alias /srv/dokuwiki-media/; }
+ *
+ * Per DokuWiki's conventions every served file lives either inside the
+ * DokuWiki directory or in one of the configured data directories, so one of
+ * these two cases always applies.
+ *
+ * @param string $file absolute path of the file to send
+ * @return string the relative URL for the X-Accel-Redirect header
+ */
+function http_xaccel_url($file)
+{
+    global $conf;
+
+    $file = fullpath($file);
+    $inc = fullpath(DOKU_INC);
+
+    // files inside the DokuWiki directory keep their path relative to the root
+    if ($file === $inc || str_starts_with($file, $inc . '/')) {
+        return DOKU_REL . http_xaccel_encode(substr($file, strlen($inc) + 1));
+    }
+
+    // the file lives outside the DokuWiki directory, so a data directory has
+    // been relocated; map it to its default location below `data/`. The default
+    // location of every reconfigurable directory is its name below `data/`.
+    $dirs = [
+        'datadir'      => 'data/pages',
+        'olddir'       => 'data/attic',
+        'mediadir'     => 'data/media',
+        'mediaolddir'  => 'data/media_attic',
+        'metadir'      => 'data/meta',
+        'mediametadir' => 'data/media_meta',
+        'cachedir'     => 'data/cache',
+        'indexdir'     => 'data/index',
+        'lockdir'      => 'data/locks',
+        'tmpdir'       => 'data/tmp',
+        'logdir'       => 'data/log',
+        'savedir'      => 'data',
+    ];
+    $roots = [];
+    foreach ($dirs as $key => $logical) {
+        if (!empty($conf[$key])) $roots[fullpath($conf[$key])] = $logical;
+    }
+    // match the most specific (longest) root first so nested directories win
+    uksort($roots, fn($a, $b) => strlen($b) - strlen($a));
+
+    foreach ($roots as $root => $logical) {
+        if ($file === $root || str_starts_with($file, $root . '/')) {
+            $rel = http_xaccel_encode(ltrim(substr($file, strlen($root)), '/'));
+            return DOKU_REL . ($rel === '' ? $logical : $logical . '/' . $rel);
+        }
+    }
+
+    // unreachable for conventional setups; keep the legacy fallback
+    return DOKU_REL . http_xaccel_encode(substr($file, strlen($inc) + 1));
+}
+
+/**
+ * URL-encode a relative path for use in an X-Accel-Redirect header
+ *
+ * Each path segment is encoded on its own so the slashes are preserved. nginx
+ * URL-decodes the redirect target, so without this files whose names contain
+ * spaces or other special characters would not be found.
+ *
+ * @param string $path relative path
+ * @return string
+ */
+function http_xaccel_encode($path)
+{
+    return implode('/', array_map('rawurlencode', explode('/', $path)));
 }
 
 /**
